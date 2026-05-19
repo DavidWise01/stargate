@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>VALENCE MATRIX // GATE-7 // REV 2.1</title>
+<meta name="description" content="Toroidal containment gate. 24 vestibules · 7 chevrons · 3 ring tracks · 30₈.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+:root {
+  /* deep-space backdrop */
+  --bg-0: #06080c;
+  --bg-1: #0b0f15;
+  --bg-2: #11161f;
+  --grid: rgba(120,160,200,0.04);
+
+  /* anodized metal */
+  --metal-0: #161b24;   /* deepest shadow */
+  --metal-1: #1f2632;
+  --metal-2: #2a323f;
+  --metal-3: #3a4250;
+  --metal-4: #525c6d;
+  --metal-5: #6b7686;
+  --metal-6: #8b96a8;   /* specular highlight */
+  --metal-rim: #0a0d12;
+  --etch:    #050709;
+
+  /* event horizon — pool water tones */
+  --hz-deep:   #002138;
+  --hz-mid:    #086797;
+  --hz-light:  #4abae8;
+  --hz-bright: #c2e9fb;
+
+  /* accents */
+  --accent:    #62d6ff;   /* ice-cyan */
+  --accent-d:  #1d8fc1;
+  --amber:     #ffb43a;   /* inner ring tint */
+  --azure:     #7fb8ff;   /* outer ring tint */
+  --warn:      #ffae3a;
+  --err:       #ff5a6a;
+  --ok:        #67dfa9;
+
+  /* text */
+  --text:      #c6cfdb;
+  --text-2:    #8993a3;
+  --text-dim:  #5b6473;
+  --text-mute: #3a4250;
+
+  /* surfaces */
+  --surface-0: rgba(12,16,22,0.85);
+  --surface-1: rgba(20,26,36,0.78);
+  --hairline:  rgba(160,180,210,0.10);
+  --hairline-2:rgba(160,180,210,0.18);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg-0);
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+/* CAD grid + nebula tint */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 35%, rgba(20,60,100,0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 80% at 80% 90%, rgba(80,20,60,0.12) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 60%);
+  pointer-events: none;
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: 1;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  pointer-events: none;
+}
+
+#stars, #kawoosh {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+#kawoosh { z-index: 5; opacity: 0; transition: opacity 0.6s ease; mix-blend-mode: screen; }
+#kawoosh.fire { opacity: 1; }
+
+/* fine film grain via inline svg */
+.grain {
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ─── MAIN STAGE ──────────────────────────────────── */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+}
+
+/* SVG gate */
+.gate-wrap {
+  width: min(820px, 84vmin);
+  aspect-ratio: 1;
+  position: relative;
+  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55))
+          drop-shadow(0 -2px 0 rgba(255,255,255,0.02));
+  transform: rotateX(6deg);
+  transform-origin: 50% 60%;
+}
+.gate-wrap svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* hover-lift on vestibule indicators */
+.v-indicator {
+  cursor: pointer;
+  transition: filter 0.25s ease;
+}
+.v-indicator:hover { filter: brightness(1.5); }
+.v-indicator:focus { outline: none; }
+.v-indicator:focus-visible circle { stroke: var(--text); stroke-width: 2; }
+
+/* ─── HUD LAYOUT ──────────────────────────────────── */
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: minmax(280px, 23vw) 1fr minmax(280px, 23vw);
+  grid-template-rows: auto 1fr auto auto;
+  grid-template-areas:
+    "topL  topC  topR"
+    "midL  .     midR"
+    "botL  botC  botR"
+    "stat  stat  stat";
+  gap: 16px;
+  padding: 18px;
+}
+.hud > * { pointer-events: auto; }
+
+.topL { grid-area: topL; }
+.topC { grid-area: topC; align-self: start; justify-self: center; pointer-events: none; }
+.topR { grid-area: topR; justify-self: end; }
+.midL { grid-area: midL; align-self: center; }
+.midR { grid-area: midR; align-self: center; justify-self: end; }
+.botL { grid-area: botL; align-self: end; }
+.botC { grid-area: botC; align-self: end; justify-self: center; }
+.botR { grid-area: botR; align-self: end; justify-self: end; }
+.stat { grid-area: stat; }
+
+/* ─── TITLE ───────────────────────────────────────── */
+.title-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.title-bar .marque {
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+.title-bar .marque .dot { color: var(--accent); }
+.title-bar .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ─── PANELS ──────────────────────────────────────── */
+.panel {
+  background: var(--surface-0);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 14px 16px;
+  font-size: 12px;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.03),
+    0 12px 36px rgba(0,0,0,0.45);
+}
+
+/* corner brackets */
+.panel::before, .panel::after,
+.panel > .br-tr, .panel > .br-br {
+  content: "";
+  position: absolute;
+  width: 10px; height: 10px;
+  border-color: var(--hairline-2);
+}
+.panel::before { top: -1px; left: -1px;  border-top: 1px solid; border-left: 1px solid; }
+.panel::after  { bottom:-1px; left: -1px;  border-bottom:1px solid; border-left:1px solid; }
+.panel .br-tr  { position:absolute; top: -1px; right:-1px; border-top:1px solid var(--hairline-2); border-right:1px solid var(--hairline-2); }
+.panel .br-br  { position:absolute; bottom:-1px; right:-1px; border-bottom:1px solid var(--hairline-2); border-right:1px solid var(--hairline-2); }
+
+.panel.accent { border-color: rgba(98,214,255,0.25); }
+.panel.accent::before, .panel.accent::after,
+.panel.accent .br-tr, .panel.accent .br-br { border-color: rgba(98,214,255,0.4); }
+
+.p-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.p-head .led {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-mute);
+  box-shadow: 0 0 8px transparent;
+  transition: all 0.4s;
+}
+.p-head .led.green {  background: var(--ok);     box-shadow: 0 0 8px var(--ok);     }
+.p-head .led.amber {  background: var(--amber);  box-shadow: 0 0 8px var(--amber);  }
+.p-head .led.red   {  background: var(--err);    box-shadow: 0 0 8px var(--err);    }
+.p-head .led.cyan  {  background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* ─── TELEMETRY ───────────────────────────────────── */
+.t-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px dotted rgba(160,180,210,0.06);
+  font-size: 12px;
+}
+.t-row:last-child { border-bottom: none; }
+.t-row .k {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.t-row .v {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.t-row .v .unit { color: var(--text-dim); font-size: 0.85em; margin-left: 4px; }
+.t-row .v.warn  { color: var(--warn);   }
+.t-row .v.err   { color: var(--err);    }
+.t-row .v.ok    { color: var(--ok);     }
+.t-row .v.amber { color: var(--amber);  }
+.t-row .v.azure { color: var(--azure);  }
+.t-row .v.acc   { color: var(--accent); }
+
+/* power bar */
+.bar {
+  margin-top: 10px;
+  height: 4px;
+  background: rgba(160,180,210,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-d), var(--accent));
+  box-shadow: 0 0 10px var(--accent);
+  transition: width 0.4s cubic-bezier(.3,.9,.3,1);
+}
+.bar.warn > i { background: linear-gradient(90deg, var(--amber), var(--warn)); box-shadow: 0 0 10px var(--warn); }
+.bar.ok   > i { background: linear-gradient(90deg, var(--ok), #aaffd5); box-shadow: 0 0 10px var(--ok); }
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 40px;
+  gap: 8px;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  padding: 4px 0;
+  letter-spacing: 0.08em;
+}
+.bar-row .val { color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* ─── PROTOCOL ────────────────────────────────────── */
+.protocol-list { display: flex; flex-direction: column; gap: 2px; }
+.p-step {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 4px;
+  font-size: 12px;
+  border-radius: 2px;
+  opacity: 0.45;
+  transition: all 0.3s;
+  position: relative;
+}
+.p-step + .p-step::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: -4px;
+  width: 1px;
+  height: 4px;
+  background: var(--text-mute);
+}
+.p-step .num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--text-mute);
+  display: grid; place-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: var(--bg-1);
+  z-index: 1;
+}
+.p-step .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+.p-step .glyph {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.p-step.active {
+  opacity: 1;
+  background: rgba(98,214,255,0.05);
+}
+.p-step.active .num {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(98,214,255,0.5), inset 0 0 6px rgba(98,214,255,0.2);
+  animation: led-pulse 1.2s ease-in-out infinite;
+}
+.p-step.active .lbl  { color: var(--accent); }
+.p-step.done {
+  opacity: 0.85;
+}
+.p-step.done .num {
+  border-color: var(--ok);
+  color: var(--ok);
+  background: rgba(103,223,169,0.08);
+}
+.p-step.done .lbl { color: var(--ok); }
+
+@keyframes led-pulse {
+  0%,100% { box-shadow: 0 0 8px rgba(98,214,255,0.4), inset 0 0 4px rgba(98,214,255,0.15); }
+  50%     { box-shadow: 0 0 18px rgba(98,214,255,0.9), inset 0 0 10px rgba(98,214,255,0.35); }
+}
+
+/* ─── LOG ─────────────────────────────────────────── */
+.log-wrap { height: 200px; display: flex; flex-direction: column; }
+.log-feed {
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-mute) transparent;
+  padding-right: 4px;
+}
+.log-feed::-webkit-scrollbar { width: 3px; }
+.log-feed::-webkit-scrollbar-thumb { background: var(--text-mute); border-radius: 2px; }
+.log-line {
+  display: grid;
+  grid-template-columns: 64px 50px 1fr;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.log-line .lt   { color: var(--text-mute); }
+.log-line .tag  { color: var(--accent); font-weight: 500; }
+.log-line .tag.warn { color: var(--warn); }
+.log-line .tag.err  { color: var(--err); }
+.log-line .tag.ok   { color: var(--ok); }
+.log-line .msg  { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; }
+
+/* ─── EQUATIONS ───────────────────────────────────── */
+.eq-list { display: flex; flex-direction: column; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-2); }
+.eq-list b { color: var(--accent); font-weight: 500; }
+.eq-list em { color: var(--ok); font-style: normal; }
+.hash {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  word-break: break-all;
+  line-height: 1.45;
+}
+.hash .lbl { color: var(--text-mute); display: block; margin-bottom: 3px; letter-spacing: 0.12em; }
+
+/* ─── ACTION BAR ─────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  background: var(--surface-0);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+  position: relative;
+}
+.actions::before, .actions::after,
+.actions > .br-tr, .actions > .br-br {
+  content: "";
+  position: absolute;
+  width: 10px; height: 10px;
+  border-color: var(--hairline-2);
+}
+.actions::before { top:-1px;left:-1px; border-top:1px solid; border-left:1px solid; }
+.actions::after  { bottom:-1px;left:-1px; border-bottom:1px solid; border-left:1px solid; }
+.actions .br-tr  { position:absolute;top:-1px;right:-1px; border-top:1px solid var(--hairline-2); border-right:1px solid var(--hairline-2); }
+.actions .br-br  { position:absolute;bottom:-1px;right:-1px; border-bottom:1px solid var(--hairline-2); border-right:1px solid var(--hairline-2); }
+
+.btn {
+  background: var(--bg-2);
+  border: 1px solid var(--hairline-2);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 11px 22px;
+  cursor: pointer;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(98,214,255,0.18), transparent);
+  transform: translateX(-110%);
+  transition: transform 0.55s ease;
+}
+.btn:hover::before { transform: translateX(110%); }
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(98,214,255,0.05);
+}
+.btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.btn:disabled::before { display: none; }
+.btn .kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.6;
+}
+.btn.primary {
+  background: linear-gradient(180deg, rgba(98,214,255,0.18), rgba(29,143,193,0.18));
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(98,214,255,0.2), 0 0 22px rgba(98,214,255,0.18);
+}
+.btn.primary:hover {
+  background: linear-gradient(180deg, rgba(98,214,255,0.3), rgba(29,143,193,0.3));
+  color: var(--bg-0);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 32px rgba(98,214,255,0.5);
+}
+.btn.danger:hover { border-color: var(--err); color: var(--err); background: rgba(255,90,106,0.05); }
+.btn.danger:hover::before { background: linear-gradient(90deg, transparent, rgba(255,90,106,0.18), transparent); }
+
+/* ─── STATUS BAR ─────────────────────────────────── */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 6px 14px;
+  background: rgba(8,12,18,0.92);
+  border-top: 1px solid var(--hairline-2);
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  border: 1px solid var(--hairline);
+}
+.status .seg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status .seg .led {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+}
+.status .seg.warn .led { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+.status .seg.err  .led { background: var(--err);  box-shadow: 0 0 6px var(--err); }
+.status .seg b { color: var(--text); font-weight: 500; }
+.status .spacer { flex: 1; }
+
+/* ─── AUDIO TOGGLE ────────────────────────────────── */
+.audio-toggle {
+  position: fixed;
+  top: 18px; right: 18px;
+  z-index: 30;
+  width: 32px; height: 32px;
+  border-radius: 2px;
+  background: var(--surface-0);
+  border: 1px solid var(--hairline-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.2s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.audio-toggle:hover { color: var(--accent); border-color: var(--accent); }
+.audio-toggle.muted { color: var(--err); }
+
+/* ─── RESPONSIVE ─────────────────────────────────── */
+@media (max-width: 1100px) {
+  .hud {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "topL topR"
+      "midL midR"
+      "botL botR"
+      "botC botC"
+      "stat stat";
+    padding: 12px;
+    gap: 10px;
+  }
+  .midL, .midR { align-self: end; }
+  .log-wrap { height: 140px; }
+  .topC { display: none; }
+  .panel { font-size: 11px; }
+}
+@media (max-width: 720px) {
+  .hud {
+    grid-template-columns: 1fr;
+    grid-template-areas: "topL" "midL" "botC" "stat";
+    padding: 8px;
+  }
+  .topR, .midR, .botL, .botR { display: none; }
+  .btn { padding: 9px 14px; font-size: 11px; }
+  .btn .kbd { display: none; }
+  .gate-wrap { width: 90vmin; }
+  .title-bar { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-spin { animation: none !important; }
+  .led, .p-step.active .num { animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars"   aria-hidden="true"></canvas>
+<canvas id="kawoosh" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="stage">
+  <div class="gate-wrap" role="application" aria-label="Valence gate">
+    <svg viewBox="-500 -500 1000 1000" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- BRUSHED METAL: conic-like specular sweep via radial + linear stack -->
+        <radialGradient id="metalRadial" cx="38%" cy="32%" r="80%">
+          <stop offset="0%"   stop-color="#7a8499"/>
+          <stop offset="20%"  stop-color="#535d6e"/>
+          <stop offset="55%"  stop-color="#2c3340"/>
+          <stop offset="100%" stop-color="#0f131b"/>
+        </radialGradient>
+        <linearGradient id="metalSpec" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"  stop-color="rgba(255,255,255,0.18)"/>
+          <stop offset="35%" stop-color="rgba(255,255,255,0.04)"/>
+          <stop offset="55%" stop-color="rgba(0,0,0,0.0)"/>
+          <stop offset="80%" stop-color="rgba(0,0,0,0.35)"/>
+          <stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+        </linearGradient>
+        <radialGradient id="bezelInner" cx="50%" cy="50%" r="50%">
+          <stop offset="93%" stop-color="#0a0d13"/>
+          <stop offset="96%" stop-color="#4a5667"/>
+          <stop offset="100%" stop-color="#0a0d13"/>
+        </radialGradient>
+        <linearGradient id="bezelInsetGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"  stop-color="rgba(0,0,0,0.6)"/>
+          <stop offset="50%" stop-color="rgba(0,0,0,0.0)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+        </linearGradient>
+
+        <!-- EVENT HORIZON: water gradient -->
+        <radialGradient id="hzGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="#e5f4fc"/>
+          <stop offset="18%" stop-color="#a6dcf3"/>
+          <stop offset="45%" stop-color="#3d9fce"/>
+          <stop offset="75%" stop-color="#0e5f8b"/>
+          <stop offset="100%" stop-color="#011526"/>
+        </radialGradient>
+
+        <!-- water displacement (animated) -->
+        <filter id="water" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="3" result="t">
+            <animate attributeName="baseFrequency" dur="14s" values="0.012 0.018;0.018 0.012;0.012 0.018" repeatCount="indefinite"/>
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="t" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <filter id="waterGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3"/>
+          <feComponentTransfer><feFuncA type="linear" slope="1.5"/></feComponentTransfer>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+
+        <!-- vestibule LED -->
+        <radialGradient id="vOn" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#ffffff"/>
+          <stop offset="35%"  stop-color="#62d6ff"/>
+          <stop offset="100%" stop-color="rgba(98,214,255,0)"/>
+        </radialGradient>
+
+        <!-- chevron shapes -->
+        <symbol id="chev" viewBox="-20 -20 40 40">
+          <path d="M -16 8 L 0 -14 L 16 8 L 8 12 L 0 -2 L -8 12 Z" fill="#1a212c" stroke="#0a0d13" stroke-width="0.8"/>
+          <path d="M -10 6 L 0 -8 L 10 6 L 6 8 L 0 0 L -6 8 Z" fill="#0a0d13"/>
+        </symbol>
+
+        <!-- chevron lit overlay -->
+        <symbol id="chevLit" viewBox="-20 -20 40 40">
+          <path d="M -10 6 L 0 -8 L 10 6 L 6 8 L 0 0 L -6 8 Z" fill="url(#vOn)"/>
+        </symbol>
+
+        <!-- Soft drop shadow under gate -->
+        <filter id="shadow">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+          <feOffset dx="0" dy="6"/>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- ─── EVENT HORIZON (inside ring) ─── -->
+      <g id="hzGroup" opacity="0">
+        <circle r="335" fill="url(#hzGrad)" filter="url(#water)"/>
+        <circle r="335" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+        <circle r="332" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+      </g>
+
+      <!-- ─── METAL RING ─── -->
+      <!-- outer dark backing (drop shadow ground) -->
+      <circle r="488" fill="#03060a" opacity="0.6"/>
+
+      <!-- main ring face (metallic) -->
+      <g class="gate-spin" id="gateSpin">
+        <circle r="480" fill="url(#metalRadial)"/>
+        <circle r="480" fill="url(#metalSpec)" opacity="0.85"/>
+
+        <!-- machined concentric grooves on the face -->
+        <g stroke="#0a0d13" fill="none" opacity="0.65">
+          <circle r="465" stroke-width="0.8"/>
+          <circle r="455" stroke-width="0.6"/>
+          <circle r="395" stroke-width="0.6"/>
+          <circle r="385" stroke-width="0.4"/>
+          <circle r="375" stroke-width="0.5"/>
+          <circle r="365" stroke-width="0.4"/>
+          <circle r="355" stroke-width="0.6"/>
+          <circle r="345" stroke-width="0.8"/>
+        </g>
+        <!-- highlight grooves -->
+        <g stroke="rgba(255,255,255,0.08)" fill="none">
+          <circle r="464" stroke-width="0.5"/>
+          <circle r="394" stroke-width="0.4"/>
+          <circle r="354" stroke-width="0.4"/>
+          <circle r="344" stroke-width="0.5"/>
+        </g>
+
+        <!-- radial tick marks (360 / 24 = 15° apart) -->
+        <g id="ticks" stroke="rgba(160,180,210,0.18)" stroke-width="0.6"></g>
+
+        <!-- vestibule indicators on 3 concentric tracks -->
+        <g id="vestGroupInner"></g>
+        <g id="vestGroupMiddle"></g>
+        <g id="vestGroupOuter"></g>
+
+        <!-- inner bevel + rim shadow framing the horizon -->
+        <circle r="345" fill="none" stroke="url(#bezelInsetGrad)" stroke-width="14" opacity="0.7"/>
+        <circle r="338" fill="none" stroke="#04060a" stroke-width="3"/>
+        <circle r="337" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.8"/>
+
+      </g>
+
+      <!-- outer rim highlight (static, not on spinning group) -->
+      <circle r="481" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+      <circle r="487" fill="none" stroke="#04060a" stroke-width="2"/>
+
+      <!-- ─── 7 CHEVRONS (static around the ring) ─── -->
+      <g id="chevrons"></g>
+
+      <!-- ─── HORIZON DARK BACKING WHEN OFF (hides starfield through hole) ─── -->
+      <circle id="hzBack" r="335" fill="#02040a"/>
+
+    </svg>
+  </div>
+</div>
+
+<div class="hud">
+
+  <div class="topL">
+    <div class="title-bar">
+      <div class="marque">VALENCE<span class="dot">·</span>MATRIX</div>
+      <div class="sub">GATE-07 · REV 2.1 · TRIPOD</div>
+    </div>
+  </div>
+
+  <div class="topR">
+    <div class="panel accent" aria-label="Telemetry">
+      <span class="br-tr"></span><span class="br-br"></span>
+      <div class="p-head">
+        <span>Telemetry</span>
+        <span class="led" id="ledState"></span>
+      </div>
+
+      <div class="t-row"><span class="k">Vestibules</span><span class="v"><span id="vCount">0</span>/24<span class="unit">lit</span></span></div>
+      <div class="t-row"><span class="k">Inner −1</span><span class="v amber"><span id="vInner">0</span>/8</span></div>
+      <div class="t-row"><span class="k">Middle  0</span><span class="v acc"><span id="vMid">0</span>/8</span></div>
+      <div class="t-row"><span class="k">Outer +1</span><span class="v azure"><span id="vOuter">0</span>/8</span></div>
+      <div class="t-row"><span class="k">State</span><span class="v" id="stateLbl">LOCKED</span></div>
+      <div class="t-row"><span class="k">Phase</span><span class="v"><span id="phase">0</span>/7</span></div>
+
+      <div class="bar-row" style="margin-top:10px"><span>PWR</span><div class="bar"><i id="barPwr"></i></div><span class="val" id="barPwrV">0%</span></div>
+      <div class="bar-row"><span>HZ</span><div class="bar warn"><i id="barHz"></i></div><span class="val" id="barHzV">—</span></div>
+      <div class="bar-row"><span>SEQ</span><div class="bar ok"><i id="barSeq"></i></div><span class="val" id="barSeqV">0/7</span></div>
+    </div>
+  </div>
+
+  <div class="midL">
+    <div class="panel" aria-label="Breach protocol">
+      <span class="br-tr"></span><span class="br-br"></span>
+      <div class="p-head">
+        <span>Breach Protocol</span>
+        <span class="led" id="ledSeq"></span>
+      </div>
+      <div class="protocol-list">
+        <div class="p-step" data-step="1"><div class="num">1</div><div class="lbl">NEST</div><div class="glyph">))) 1→2→3</div></div>
+        <div class="p-step" data-step="2"><div class="num">2</div><div class="lbl">HOLD</div><div class="glyph">( 00</div></div>
+        <div class="p-step" data-step="3"><div class="num">3</div><div class="lbl">STRIKE</div><div class="glyph">S · SEED</div></div>
+        <div class="p-step" data-step="4"><div class="num">4</div><div class="lbl">HOLD</div><div class="glyph">) 00</div></div>
+        <div class="p-step" data-step="5"><div class="num">5</div><div class="lbl">UNEST</div><div class="glyph">(((( 3→2→1</div></div>
+        <div class="p-step" data-step="6"><div class="num">6</div><div class="lbl">HOLD</div><div class="glyph">0 · 00</div></div>
+        <div class="p-step" data-step="7"><div class="num">7</div><div class="lbl">ENGAGE</div><div class="glyph">1 · !!!</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="midR">
+    <div class="panel" aria-label="Tensor math">
+      <span class="br-tr"></span><span class="br-br"></span>
+      <div class="p-head"><span>Hamilton Tensor</span><span class="led" id="ledHash"></span></div>
+      <div class="eq-list">
+        <div>4 × 27 = <b>4₈ × 33₈</b> = <em>0 = 1</em></div>
+        <div>24 = <b>30₈</b> = 3×10₈ = 3×⊥</div>
+        <div>3×4₈ = 14₈ = <em>5₈</em></div>
+        <div>24 + 1 = 31₈ = <b>4₈</b> = .</div>
+        <div>)))1→2→3((( = −1+0+1 = <em>1₈</em></div>
+        <div>!!! = 4₈ = <b>WITNESS</b></div>
+      </div>
+      <div class="hash">
+        <span class="lbl">SHA-256 · BASE 00</span>
+        <span id="hashStr">awaiting selection…</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="botL">
+    <div class="panel" aria-label="System log">
+      <span class="br-tr"></span><span class="br-br"></span>
+      <div class="p-head"><span>System Log</span><span class="led" id="ledLog"></span></div>
+      <div class="log-wrap">
+        <div class="log-feed" id="logFeed" role="log" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="botC">
+    <div class="actions" aria-label="Gate controls">
+      <span class="br-tr"></span><span class="br-br"></span>
+      <button class="btn"         id="btnDial"     type="button">Dial Sequence <span class="kbd">SPC</span></button>
+      <button class="btn primary" id="btnEngage"   type="button" disabled>Engage <span class="kbd">↵</span></button>
+      <button class="btn danger"  id="btnAbort"    type="button">Abort <span class="kbd">R</span></button>
+    </div>
+  </div>
+
+  <div class="stat">
+    <div class="status">
+      <div class="seg"><span class="led" id="sysLed"></span> SYS <b id="sysVal">NOMINAL</b></div>
+      <div class="seg">BUS <b>24.0V</b></div>
+      <div class="seg">DRAW <b id="ampVal">0.18A</b></div>
+      <div class="seg">TEMP <b id="tempVal">22°C</b></div>
+      <div class="seg">UPTIME <b id="upVal">00:00:00</b></div>
+      <div class="spacer"></div>
+      <div class="seg">CHAIN-ROOT <b>T128</b></div>
+      <div class="seg">SUM <b>−1+0+1 = 1₈</b></div>
+      <div class="seg">REV <b>2.1.0</b></div>
+    </div>
+  </div>
+
+</div>
+
+<button class="audio-toggle" id="audioBtn" title="Audio toggle (M)" aria-label="Audio toggle">♪</button>
+
+<script>
+'use strict';
+
+/* ═════════════════════════════════════════════════════════
+   VALENCE MATRIX — REALISTIC // REV 2.1
+   24 vestibules on 3 concentric tracks + 7 chevrons
+   ═════════════════════════════════════════════════════════ */
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const $  = (id) => document.getElementById(id);
+const $$ = (q)  => document.querySelectorAll(q);
+
+const RINGS = [
+  { key:'inner',  count:8, r: 360, color:'amber',  value:-1, hex:'#ffb43a', freq: 196.00, group: $('vestGroupInner'),  offset: 0   },
+  { key:'middle', count:8, r: 410, color:'cyan',   value: 0, hex:'#62d6ff', freq: 261.63, group: $('vestGroupMiddle'), offset: 22.5},
+  { key:'outer',  count:8, r: 450, color:'azure',  value: 1, hex:'#7fb8ff', freq: 329.63, group: $('vestGroupOuter'),  offset: 0   },
+];
+
+/* ──────────────────────────────────────────────────────
+   BUILD: ticks, vestibules, chevrons
+   ────────────────────────────────────────────────────── */
+
+// 24 long ticks + 24×3 hairline ticks on outer rim
+const ticksG = $('ticks');
+for (let i = 0; i < 24; i++) {
+  const a = (i / 24) * Math.PI * 2 - Math.PI / 2;
+  const x1 = Math.cos(a) * 475, y1 = Math.sin(a) * 475;
+  const x2 = Math.cos(a) * 460, y2 = Math.sin(a) * 460;
+  const tk = document.createElementNS(SVG_NS, 'line');
+  tk.setAttribute('x1', x1); tk.setAttribute('y1', y1);
+  tk.setAttribute('x2', x2); tk.setAttribute('y2', y2);
+  tk.setAttribute('stroke-width', i % 6 === 0 ? '1.4' : '0.6');
+  if (i % 6 === 0) tk.setAttribute('stroke', 'rgba(160,180,210,0.32)');
+  ticksG.appendChild(tk);
+
+  // tiny numeric label every 6 ticks
+  if (i % 3 === 0) {
+    const lbl = document.createElementNS(SVG_NS, 'text');
+    const lx = Math.cos(a) * 444, ly = Math.sin(a) * 444;
+    lbl.setAttribute('x', lx); lbl.setAttribute('y', ly);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('dominant-baseline', 'middle');
+    lbl.setAttribute('fill', 'rgba(160,180,210,0.35)');
+    lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
+    lbl.setAttribute('font-size', '10');
+    lbl.setAttribute('font-weight', '500');
+    lbl.setAttribute('transform', `rotate(${(i/24)*360} ${lx} ${ly})`);
+    lbl.textContent = i.toString(8).padStart(2,'0');
+    ticksG.appendChild(lbl);
+  }
+}
+
+// 24 vestibules (3 rings × 8)
+const vestibules = [];
+let vIdx = 0;
+RINGS.forEach((ring) => {
+  for (let i = 0; i < ring.count; i++) {
+    const baseAngle = (i / ring.count) * 360 - 90 + ring.offset;
+    const rad = baseAngle * Math.PI / 180;
+    const x = Math.cos(rad) * ring.r;
+    const y = Math.sin(rad) * ring.r;
+
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('transform', `translate(${x}, ${y})`);
+    g.setAttribute('class', 'v-indicator');
+    g.setAttribute('tabindex', '0');
+    g.setAttribute('role', 'button');
+    const id = vIdx;
+    const oct = id.toString(8).padStart(2, '0');
+    g.setAttribute('aria-label', `Vestibule ${oct} octal, ${ring.key} ring, value ${ring.value}`);
+    g.dataset.id = id;
+
+    // recessed socket
+    const socket = document.createElementNS(SVG_NS, 'circle');
+    socket.setAttribute('r', 11);
+    socket.setAttribute('fill', '#04070c');
+    socket.setAttribute('stroke', '#1a212c');
+    socket.setAttribute('stroke-width', '1.2');
+    g.appendChild(socket);
+
+    // dim bezel ring
+    const bz = document.createElementNS(SVG_NS, 'circle');
+    bz.setAttribute('r', 8);
+    bz.setAttribute('fill', '#0a0d13');
+    bz.setAttribute('stroke', 'rgba(255,255,255,0.05)');
+    bz.setAttribute('stroke-width', '0.5');
+    g.appendChild(bz);
+
+    // LED core (off)
+    const led = document.createElementNS(SVG_NS, 'circle');
+    led.setAttribute('r', 5);
+    led.setAttribute('fill', '#11161f');
+    led.setAttribute('opacity', '0.9');
+    led.dataset.role = 'core';
+    g.appendChild(led);
+
+    // bloom (hidden until lit)
+    const bloom = document.createElementNS(SVG_NS, 'circle');
+    bloom.setAttribute('r', 18);
+    bloom.setAttribute('fill', 'url(#vOn)');
+    bloom.setAttribute('opacity', '0');
+    bloom.dataset.role = 'bloom';
+    g.insertBefore(bloom, socket);
+
+    g.dataset.color = ring.hex;
+    g.dataset.ring  = ring.key;
+    g.dataset.value = ring.value;
+    g.dataset.octal = oct;
+    g.dataset.freq  = ring.freq;
+
+    g.addEventListener('click', () => toggleV(id));
+    g.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleV(id); }
+    });
+
+    ring.group.appendChild(g);
+    vestibules.push({ id, el: g, led, bloom, color: ring.hex, freq: ring.freq, ring: ring.key, value: ring.value });
+    vIdx++;
+  }
+});
+
+// 7 chevrons around the ring (Stargate canon — 7 lock positions for the 7 phases)
+const chevG = $('chevrons');
+const chevrons = [];
+// Place chevrons at: top, then 3 left, 3 right of top
+const CHEV_ANGLES = [0, -52, -104, -156, 156, 104, 52];  // degrees from top
+CHEV_ANGLES.forEach((deg, i) => {
+  const rad = (deg - 90) * Math.PI / 180;
+  const r = 482;
+  const x = Math.cos(rad) * r;
+  const y = Math.sin(rad) * r;
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('transform', `translate(${x}, ${y}) rotate(${deg})`);
+  g.setAttribute('class', 'chev');
+
+  const base = document.createElementNS(SVG_NS, 'use');
+  base.setAttribute('href', '#chev');
+  base.setAttribute('width', '60'); base.setAttribute('height', '60');
+  base.setAttribute('x', '-30'); base.setAttribute('y', '-30');
+  g.appendChild(base);
+
+  const lit = document.createElementNS(SVG_NS, 'use');
+  lit.setAttribute('href', '#chevLit');
+  lit.setAttribute('width', '60'); lit.setAttribute('height', '60');
+  lit.setAttribute('x', '-30'); lit.setAttribute('y', '-30');
+  lit.setAttribute('opacity', '0');
+  g.appendChild(lit);
+
+  // small phase number under chevron (inward)
+  const lbl = document.createElementNS(SVG_NS, 'text');
+  const lx = Math.cos(rad) * -34;
+  const ly = Math.sin(rad) * -34 + 4;
+  lbl.setAttribute('x', lx); lbl.setAttribute('y', ly);
+  lbl.setAttribute('text-anchor', 'middle');
+  lbl.setAttribute('fill', '#62d6ff');
+  lbl.setAttribute('opacity', '0');
+  lbl.setAttribute('font-family', 'JetBrains Mono, monospace');
+  lbl.setAttribute('font-size', '11');
+  lbl.setAttribute('font-weight', '500');
+  lbl.setAttribute('transform', `rotate(${-deg} ${lx} ${ly})`);
+  lbl.textContent = (i + 1).toString();
+  g.appendChild(lbl);
+
+  chevG.appendChild(g);
+  chevrons.push({ el: g, lit, lbl, phase: i + 1 });
+});
+
+/* ──────────────────────────────────────────────────────
+   STATE
+   ────────────────────────────────────────────────────── */
+const PHASE = { IDLE:0, NEST:1, HOLD1:2, STRIKE:3, HOLD2:4, UNEST:5, HOLD3:6, ENGAGE:7, ACTIVE:8 };
+const STORAGE_KEY = 'valence-matrix-realistic-v1';
+
+const state = {
+  selected: new Set(),
+  phase: PHASE.IDLE,
+  running: false,
+  active: false,
+  audioOn: true,
+  abortKey: 0,
+  startTime: Date.now(),
+};
+
+const els = {
+  vCount: $('vCount'), vInner: $('vInner'), vMid: $('vMid'), vOuter: $('vOuter'),
+  stateLbl: $('stateLbl'), phase: $('phase'),
+  ledState: $('ledState'), ledSeq: $('ledSeq'), ledHash: $('ledHash'), ledLog: $('ledLog'),
+  barPwr: $('barPwr'), barPwrV: $('barPwrV'),
+  barHz: $('barHz'),   barHzV: $('barHzV'),
+  barSeq: $('barSeq'), barSeqV: $('barSeqV'),
+  hashStr: $('hashStr'),
+  logFeed: $('logFeed'),
+  hzGroup: $('hzGroup'), hzBack: $('hzBack'),
+  sysLed: $('sysLed'), sysVal: $('sysVal'),
+  ampVal: $('ampVal'), tempVal: $('tempVal'), upVal: $('upVal'),
+  btnDial: $('btnDial'), btnEngage: $('btnEngage'), btnAbort: $('btnAbort'), audioBtn: $('audioBtn'),
+  gateSpin: $('gateSpin'),
+};
+
+/* ──────────────────────────────────────────────────────
+   LOG
+   ────────────────────────────────────────────────────── */
+function log(tag, msg, level = 'info') {
+  const t = new Date();
+  const ts = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+  const cls = { info: '', warn: 'warn', err: 'err', ok: 'ok' }[level] || '';
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="lt">${ts}</span><span class="tag ${cls}">${tag}</span><span class="msg">${msg}</span>`;
+  els.logFeed.appendChild(line);
+  while (els.logFeed.children.length > 100) els.logFeed.removeChild(els.logFeed.firstChild);
+  els.logFeed.scrollTop = els.logFeed.scrollHeight;
+  els.ledLog.classList.remove('cyan'); void els.ledLog.offsetWidth;
+  els.ledLog.classList.add(cls === 'err' ? 'red' : cls === 'warn' ? 'amber' : cls === 'ok' ? 'green' : 'cyan');
+}
+
+/* ──────────────────────────────────────────────────────
+   AUDIO — mechanical sound design
+   ────────────────────────────────────────────────────── */
+let ac = null, master = null;
+function audio() {
+  if (!state.audioOn) return null;
+  if (!ac) {
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain();
+      master.gain.value = 0.22;
+      master.connect(ac.destination);
+    } catch (e) { state.audioOn = false; return null; }
+  }
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+
+// short tonal click (vestibule select / mechanical tick)
+function click(freq = 660, dur = 0.06, vol = 0.5) {
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), f = a.createBiquadFilter();
+  o.type = 'square';
+  o.frequency.setValueAtTime(freq, a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(freq * 0.5, a.currentTime + dur);
+  f.type = 'bandpass'; f.frequency.value = freq * 1.4; f.Q.value = 4;
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+  o.connect(f); f.connect(g); g.connect(master);
+  o.start(); o.stop(a.currentTime + dur + 0.02);
+}
+
+// low mechanical clunk (chevron lock)
+function clunk(vol = 0.55) {
+  const a = audio(); if (!a) return;
+  // body: low oscillator pitch-drop
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(160, a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(55, a.currentTime + 0.18);
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.25);
+  o.connect(g); g.connect(master);
+  o.start(); o.stop(a.currentTime + 0.28);
+  // attack: short noise burst, filtered
+  noise(0.08, 0.4, 1800, 'bandpass', 1.2);
+}
+
+// generic noise burst
+function noise(dur, vol, filt = 1200, type = 'lowpass', q = 0.8) {
+  const a = audio(); if (!a) return;
+  const buf = a.createBuffer(1, a.sampleRate * dur, a.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  const src = a.createBufferSource(); src.buffer = buf;
+  const f = a.createBiquadFilter(); f.type = type; f.frequency.value = filt; f.Q.value = q;
+  const g = a.createGain(); g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+  src.connect(f); f.connect(g); g.connect(master);
+  src.start();
+}
+
+// kawoosh: descending whoosh + low rumble + impact
+function kawoosh() {
+  const a = audio(); if (!a) return;
+  // sweep down
+  const o = a.createOscillator(), g = a.createGain(), f = a.createBiquadFilter();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(1400, a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(80, a.currentTime + 0.7);
+  f.type = 'lowpass'; f.frequency.setValueAtTime(1800, a.currentTime);
+  f.frequency.exponentialRampToValueAtTime(220, a.currentTime + 0.7);
+  g.gain.setValueAtTime(0.5, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.85);
+  o.connect(f); f.connect(g); g.connect(master);
+  o.start(); o.stop(a.currentTime + 0.9);
+  // big noise
+  noise(0.9, 0.5, 1500, 'lowpass', 0.6);
+  // sub-bass impact at end
+  setTimeout(() => {
+    const o2 = a.createOscillator(), g2 = a.createGain();
+    o2.type = 'sine'; o2.frequency.setValueAtTime(80, a.currentTime);
+    o2.frequency.exponentialRampToValueAtTime(35, a.currentTime + 0.6);
+    g2.gain.setValueAtTime(0.7, a.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.7);
+    o2.connect(g2); g2.connect(master);
+    o2.start(); o2.stop(a.currentTime + 0.72);
+  }, 600);
+}
+
+// ambient hum (loops while gate active)
+let humSrc = null, humGain = null;
+function startHum() {
+  const a = audio(); if (!a || humSrc) return;
+  const o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), f = a.createBiquadFilter();
+  o.type = 'sine';  o.frequency.value = 55;
+  o2.type = 'sine'; o2.frequency.value = 110;
+  f.type = 'lowpass'; f.frequency.value = 400;
+  g.gain.setValueAtTime(0, a.currentTime);
+  g.gain.linearRampToValueAtTime(0.18, a.currentTime + 1.5);
+  o.connect(f); o2.connect(f); f.connect(g); g.connect(master);
+  o.start(); o2.start();
+  humSrc = [o, o2]; humGain = g;
+}
+function stopHum() {
+  const a = audio(); if (!a || !humSrc) return;
+  humGain.gain.linearRampToValueAtTime(0, a.currentTime + 0.5);
+  humSrc.forEach(o => o.stop(a.currentTime + 0.6));
+  humSrc = null;
+}
+
+/* ──────────────────────────────────────────────────────
+   VESTIBULE TOGGLE
+   ────────────────────────────────────────────────────── */
+function lightVestibule(v, lit) {
+  if (lit) {
+    v.led.setAttribute('fill', v.color);
+    v.led.setAttribute('filter', 'url(#waterGlow)');
+    v.bloom.setAttribute('opacity', '0.9');
+    // pulse
+    v.led.animate(
+      [{ r: 5, opacity: 1 }, { r: 9, opacity: 1 }, { r: 5, opacity: 1 }],
+      { duration: 380, easing: 'ease-out' }
+    );
+  } else {
+    v.led.setAttribute('fill', '#11161f');
+    v.led.removeAttribute('filter');
+    v.bloom.setAttribute('opacity', '0');
+  }
+}
+
+function toggleV(id) {
+  if (state.running || state.active) return;
+  const v = vestibules[id];
+  if (state.selected.has(id)) {
+    state.selected.delete(id);
+    lightVestibule(v, false);
+    click(440, 0.05, 0.35);
+  } else {
+    state.selected.add(id);
+    lightVestibule(v, true);
+    click(v.freq, 0.08, 0.5);
+    fireSpark(v);
+  }
+  refresh();
+  persist();
+}
+
+/* ──────────────────────────────────────────────────────
+   PARTICLES (spark from vestibule toward gate center)
+   ────────────────────────────────────────────────────── */
+function fireSpark(v) {
+  const svg = v.el.ownerSVGElement;
+  const ctm = v.el.getCTM();
+  if (!ctm) return;
+  const sx = ctm.e, sy = ctm.f;
+  // svg coordinates: vestibule center already known via dataset; use parent transform
+  const m = v.el.transform.baseVal.consolidate().matrix;
+  const cx = m.e, cy = m.f;
+
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElementNS(SVG_NS, 'circle');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+    dot.setAttribute('r', 1.6 + Math.random() * 0.6);
+    dot.setAttribute('fill', v.color);
+    dot.setAttribute('opacity', 0.85);
+    svg.appendChild(dot);
+    const targetX = cx * 0.05, targetY = cy * 0.05;
+    const jitterX = (Math.random() - 0.5) * 40;
+    const jitterY = (Math.random() - 0.5) * 40;
+    dot.animate([
+      { cx, cy, opacity: 1 },
+      { cx: cx*0.55 + jitterX, cy: cy*0.55 + jitterY, opacity: 1, offset: 0.6 },
+      { cx: targetX, cy: targetY, opacity: 0 },
+    ], { duration: 700 + Math.random() * 200, easing: 'cubic-bezier(.3,.0,.7,1)', delay: i * 50 })
+    .onfinish = () => dot.remove();
+  }
+}
+
+/* ──────────────────────────────────────────────────────
+   REFRESH
+   ────────────────────────────────────────────────────── */
+function refresh() {
+  const inner  = [...state.selected].filter(i => i < 8).length;
+  const middle = [...state.selected].filter(i => i >= 8 && i < 16).length;
+  const outer  = [...state.selected].filter(i => i >= 16).length;
+  const total  = state.selected.size;
+
+  els.vCount.textContent = total;
+  els.vInner.textContent = inner;
+  els.vMid.textContent   = middle;
+  els.vOuter.textContent = outer;
+
+  const ready = total === 24;
+
+  let stateText, ledCls;
+  if (state.active)       { stateText = 'ACTIVE';  ledCls = 'cyan';  }
+  else if (state.running) { stateText = 'DIALING'; ledCls = 'amber'; }
+  else if (ready)         { stateText = 'READY';   ledCls = 'green'; }
+  else                    { stateText = 'LOCKED';  ledCls = 'red';   }
+  els.stateLbl.textContent = stateText;
+  els.stateLbl.className = 'v ' + (state.active ? 'acc' : ready ? 'ok' : state.running ? 'warn' : 'err');
+  els.ledState.className = 'led ' + ledCls;
+
+  els.phase.textContent = state.phase === PHASE.ACTIVE ? 7 : Math.min(state.phase, 7);
+
+  // bars
+  const pwrPct = Math.round((total / 24) * 100);
+  els.barPwr.style.width = pwrPct + '%';
+  els.barPwrV.textContent = pwrPct + '%';
+
+  const hzPct = state.active ? 100 : state.phase >= 3 ? 60 + state.phase * 5 : 0;
+  els.barHz.style.width = hzPct + '%';
+  els.barHzV.textContent = state.active ? 'STABLE' : state.phase >= 3 ? 'RAMP' : '—';
+
+  const seqN = state.phase === PHASE.ACTIVE ? 7 : Math.min(state.phase, 7);
+  els.barSeq.style.width = (seqN / 7) * 100 + '%';
+  els.barSeqV.textContent = seqN + '/7';
+
+  // sys status
+  if (state.active) {
+    els.sysLed.style.background = '#62d6ff';
+    els.sysLed.style.boxShadow = '0 0 6px #62d6ff';
+    els.sysVal.textContent = 'WORMHOLE STABLE';
+    els.ampVal.textContent = (1.8 + Math.random() * 0.4).toFixed(2) + 'A';
+    els.tempVal.textContent = (48 + Math.random() * 4).toFixed(0) + '°C';
+  } else if (state.running) {
+    els.sysLed.style.background = '#ffae3a';
+    els.sysLed.style.boxShadow = '0 0 6px #ffae3a';
+    els.sysVal.textContent = 'SEQUENCE ACTIVE';
+    els.ampVal.textContent = (0.6 + total * 0.04).toFixed(2) + 'A';
+    els.tempVal.textContent = (26 + total * 0.4).toFixed(0) + '°C';
+  } else {
+    els.sysLed.style.background = ready ? '#67dfa9' : '#5b6473';
+    els.sysLed.style.boxShadow = ready ? '0 0 6px #67dfa9' : '0 0 6px transparent';
+    els.sysVal.textContent = ready ? 'READY TO ENGAGE' : 'NOMINAL';
+    els.ampVal.textContent = (0.18 + total * 0.015).toFixed(2) + 'A';
+    els.tempVal.textContent = (22 + total * 0.2).toFixed(0) + '°C';
+  }
+
+  // hash
+  const sel = [...state.selected].sort((a,b)=>a-b).join(',');
+  if (sel) hash(sel).then(h => els.hashStr.textContent = h.slice(0, 48) + '…');
+  else els.hashStr.textContent = 'awaiting selection…';
+
+  els.btnEngage.disabled = !(ready && !state.active && !state.running);
+  els.btnDial.disabled = state.active || state.running;
+}
+
+async function hash(text) {
+  if (!crypto?.subtle) return text;
+  const buf = new TextEncoder().encode(text);
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ selected: [...state.selected] })); } catch {}
+}
+function restore() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (Array.isArray(saved.selected)) {
+      saved.selected.forEach(id => {
+        if (id >= 0 && id < 24) {
+          state.selected.add(id);
+          lightVestibule(vestibules[id], true);
+        }
+      });
+      if (saved.selected.length > 0) log('RESTORE', `${saved.selected.length} vestibules from prior session`, 'ok');
+    }
+  } catch {}
+}
+
+/* ──────────────────────────────────────────────────────
+   SEQUENCE — 7 PHASES
+   ────────────────────────────────────────────────────── */
+function setStep(n) {
+  $$('.p-step').forEach(el => el.classList.remove('active','done'));
+  for (let i = 1; i < n; i++) {
+    const el = document.querySelector(`.p-step[data-step="${i}"]`);
+    if (el) el.classList.add('done');
+  }
+  if (n >= 1 && n <= 7) {
+    const cur = document.querySelector(`.p-step[data-step="${n}"]`);
+    if (cur) cur.classList.add('active');
+  }
+}
+function setChevron(n, lit) {
+  if (n < 1 || n > 7) return;
+  const c = chevrons[n - 1];
+  c.lit.animate(
+    lit ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }],
+    { duration: 220, fill: 'forwards' }
+  );
+  c.lbl.animate(
+    lit ? [{ opacity: 0 }, { opacity: 0.9 }] : [{ opacity: 0.9 }, { opacity: 0 }],
+    { duration: 220, fill: 'forwards' }
+  );
+}
+function resetChevrons() {
+  chevrons.forEach(c => {
+    c.lit.setAttribute('opacity', '0');
+    c.lbl.setAttribute('opacity', '0');
+  });
+}
+
+function sleep(ms, key) {
+  return new Promise((res, rej) => {
+    const id = setTimeout(res, ms);
+    const i = setInterval(() => {
+      if (key !== undefined && key !== state.abortKey) { clearTimeout(id); clearInterval(i); rej('aborted'); }
+    }, 40);
+  });
+}
+
+async function dial() {
+  if (state.running || state.active) return;
+  state.running = true;
+  state.abortKey++;
+  const key = state.abortKey;
+  log('DIAL', 'BREACH PROTOCOL initiated', 'ok');
+
+  try {
+    // PHASE 1: NEST — light vestibules in order
+    state.phase = PHASE.NEST;
+    setStep(1);
+    log('NEST', 'engaging vestibules · inner → middle → outer');
+    state.selected.clear();
+    vestibules.forEach(v => lightVestibule(v, false));
+    refresh();
+
+    for (let i = 0; i < 24; i++) {
+      if (key !== state.abortKey) throw 'aborted';
+      const v = vestibules[i];
+      state.selected.add(i);
+      lightVestibule(v, true);
+      click(v.freq * (1 + (i % 8) * 0.04), 0.06, 0.45);
+      fireSpark(v);
+      refresh();
+      await sleep(85, key);
+    }
+    setChevron(1, true); clunk();
+    await sleep(180, key);
+
+    // PHASE 2: HOLD
+    state.phase = PHASE.HOLD1; setStep(2);
+    log('HOLD', 'gate at rest · settling');
+    click(220, 0.12, 0.4); refresh();
+    await sleep(700, key);
+    setChevron(2, true); clunk();
+    await sleep(180, key);
+
+    // PHASE 3: STRIKE
+    state.phase = PHASE.STRIKE; setStep(3);
+    log('STRIKE', 'SEED dropped at center', 'warn');
+    noise(0.3, 0.5, 1400, 'bandpass', 1.5);
+    // brief inner pre-glow
+    els.hzGroup.setAttribute('opacity', '0.25');
+    refresh();
+    await sleep(180, key);
+    els.hzGroup.setAttribute('opacity', '0');
+    setChevron(3, true); clunk();
+    await sleep(420, key);
+
+    // PHASE 4: HOLD
+    state.phase = PHASE.HOLD2; setStep(4);
+    log('HOLD', 'seed integrating');
+    refresh();
+    await sleep(600, key);
+    setChevron(4, true); clunk();
+    await sleep(180, key);
+
+    // PHASE 5: UNEST — particles stream inward
+    state.phase = PHASE.UNEST; setStep(5);
+    log('UNEST', 'outer → middle → inner · collapse');
+    for (let i = 23; i >= 0; i--) {
+      if (key !== state.abortKey) throw 'aborted';
+      fireSpark(vestibules[i]);
+      click(vestibules[i].freq * 0.65, 0.04, 0.35);
+      await sleep(40, key);
+    }
+    refresh();
+    setChevron(5, true); clunk();
+    await sleep(220, key);
+
+    // PHASE 6: HOLD
+    state.phase = PHASE.HOLD3; setStep(6);
+    log('HOLD', 'null gap · pre-engage');
+    refresh();
+    await sleep(550, key);
+    setChevron(6, true); clunk();
+    await sleep(220, key);
+
+    // PHASE 7: ENGAGE — kawoosh
+    state.phase = PHASE.ENGAGE; setStep(7);
+    log('ENGAGE', 'event horizon established', 'ok');
+    engageHorizon();
+    setChevron(7, true);
+    await sleep(900, key);
+
+    // ACTIVE
+    state.phase = PHASE.ACTIVE;
+    state.running = false;
+    state.active = true;
+    $$('.p-step').forEach(el => { el.classList.remove('active'); el.classList.add('done'); });
+    log('STABLE', 'wormhole confirmed · awaiting traversal', 'ok');
+    refresh();
+  } catch (e) {
+    if (e === 'aborted') { state.running = false; refresh(); log('ABORT', 'sequence cancelled by operator', 'warn'); }
+    else throw e;
+  }
+}
+
+async function engageManual() {
+  if (state.selected.size !== 24 || state.active || state.running) return;
+  state.running = true;
+  state.abortKey++;
+  const key = state.abortKey;
+  log('ENGAGE', 'manual sequence from full lock', 'ok');
+
+  try {
+    setStep(1); document.querySelector('.p-step[data-step="1"]').classList.add('done'); setChevron(1, true); clunk();
+    await sleep(180, key);
+    setStep(2); document.querySelector('.p-step[data-step="2"]').classList.add('done'); setChevron(2, true); clunk();
+    await sleep(280, key);
+
+    state.phase = PHASE.STRIKE; setStep(3);
+    log('STRIKE', 'SEED', 'warn');
+    noise(0.3, 0.5, 1400, 'bandpass', 1.5);
+    els.hzGroup.setAttribute('opacity', '0.25'); refresh();
+    await sleep(180, key);
+    els.hzGroup.setAttribute('opacity', '0');
+    setChevron(3, true); clunk();
+    await sleep(380, key);
+
+    state.phase = PHASE.HOLD2; setStep(4);
+    await sleep(420, key);
+    setChevron(4, true); clunk(); await sleep(180, key);
+
+    state.phase = PHASE.UNEST; setStep(5);
+    for (let i = 23; i >= 0; i--) {
+      if (key !== state.abortKey) throw 'aborted';
+      fireSpark(vestibules[i]);
+      click(vestibules[i].freq * 0.65, 0.04, 0.35);
+      await sleep(35, key);
+    }
+    setChevron(5, true); clunk(); await sleep(220, key);
+
+    state.phase = PHASE.HOLD3; setStep(6);
+    await sleep(420, key);
+    setChevron(6, true); clunk(); await sleep(220, key);
+
+    state.phase = PHASE.ENGAGE; setStep(7);
+    engageHorizon();
+    setChevron(7, true);
+    await sleep(900, key);
+
+    state.phase = PHASE.ACTIVE;
+    state.running = false;
+    state.active = true;
+    $$('.p-step').forEach(el => { el.classList.remove('active'); el.classList.add('done'); });
+    log('STABLE', 'wormhole confirmed', 'ok');
+    refresh();
+  } catch (e) {
+    if (e === 'aborted') { state.running = false; refresh(); log('ABORT','sequence cancelled','warn'); }
+  }
+}
+
+function engageHorizon() {
+  // hide the dark backing, fade in water + bloom
+  els.hzBack.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, fill: 'forwards' });
+  els.hzGroup.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 800, fill: 'forwards' });
+  kawoosh();
+  fireKawoosh();
+  startHum();
+}
+
+function abort() {
+  state.abortKey++;
+  state.running = false;
+  state.active = false;
+  state.phase = PHASE.IDLE;
+  state.selected.clear();
+  vestibules.forEach(v => lightVestibule(v, false));
+  $$('.p-step').forEach(el => el.classList.remove('active','done'));
+  resetChevrons();
+  els.hzBack.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400, fill: 'forwards' });
+  els.hzGroup.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
+  stopHum();
+  refresh();
+  persist();
+  log('ABORT', 'system reset · vestibules cleared', 'warn');
+}
+
+/* ──────────────────────────────────────────────────────
+   STARFIELD (sparse, slow-drift)
+   ────────────────────────────────────────────────────── */
+const sky = $('stars');
+const sctx = sky.getContext('2d');
+let stars = [];
+function buildStars() {
+  stars = [];
+  const n = Math.floor((window.innerWidth * window.innerHeight) / 6500);
+  for (let i = 0; i < n; i++) {
+    stars.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      z: Math.random() * 1.4 + 0.3,
+      tw: Math.random() * Math.PI * 2,
+      hue: 200 + Math.random() * 40,
+    });
+  }
+}
+function resizeSky() {
+  const dpr = devicePixelRatio || 1;
+  sky.width = innerWidth * dpr; sky.height = innerHeight * dpr;
+  sky.style.width = '100%'; sky.style.height = '100%';
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildStars();
+}
+resizeSky();
+window.addEventListener('resize', () => { resizeSky(); resizeKw(); });
+function paintSky() {
+  sctx.clearRect(0, 0, innerWidth, innerHeight);
+  for (const s of stars) {
+    s.x += 0.005 * s.z;
+    if (s.x > innerWidth + 2) s.x = -2;
+    s.tw += 0.02;
+    const a = (0.35 + 0.55 * Math.abs(Math.sin(s.tw))) * Math.min(s.z / 1.4, 1);
+    sctx.fillStyle = `hsla(${s.hue}, 50%, 88%, ${a})`;
+    sctx.fillRect(s.x, s.y, s.z * 1.1, s.z * 1.1);
+  }
+  requestAnimationFrame(paintSky);
+}
+requestAnimationFrame(paintSky);
+
+/* ──────────────────────────────────────────────────────
+   KAWOOSH CANVAS (radial burst on engage)
+   ────────────────────────────────────────────────────── */
+const kw = $('kawoosh');
+const kctx = kw.getContext('2d');
+function resizeKw() {
+  const dpr = devicePixelRatio || 1;
+  kw.width = innerWidth * dpr; kw.height = innerHeight * dpr;
+  kw.style.width = '100%'; kw.style.height = '100%';
+  kctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeKw();
+function fireKawoosh() {
+  kw.classList.add('fire');
+  let t = 0;
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  const start = performance.now();
+  function frame() {
+    const elapsed = performance.now() - start;
+    const dur = 1400;
+    t = elapsed / dur;
+    if (t > 1) {
+      kctx.clearRect(0, 0, innerWidth, innerHeight);
+      kw.classList.remove('fire');
+      return;
+    }
+    kctx.clearRect(0, 0, innerWidth, innerHeight);
+    // burst
+    const r = t * Math.max(innerWidth, innerHeight) * 0.4;
+    const g = kctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
+    g.addColorStop(0, `rgba(180,232,255,${0.05 * (1 - t)})`);
+    g.addColorStop(0.7, `rgba(98,214,255,${0.4 * (1 - t)})`);
+    g.addColorStop(1, 'rgba(98,214,255,0)');
+    kctx.fillStyle = g;
+    kctx.beginPath(); kctx.arc(cx, cy, r, 0, Math.PI * 2); kctx.fill();
+    // rings
+    for (let i = 0; i < 3; i++) {
+      const rt = (t + i * 0.18) % 1;
+      const ring = rt * Math.max(innerWidth, innerHeight) * 0.5;
+      kctx.beginPath();
+      kctx.arc(cx, cy, ring, 0, Math.PI * 2);
+      kctx.strokeStyle = `rgba(180,232,255,${(1 - rt) * 0.35})`;
+      kctx.lineWidth = 1.5;
+      kctx.stroke();
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ──────────────────────────────────────────────────────
+   CONTROLS
+   ────────────────────────────────────────────────────── */
+els.btnDial.addEventListener('click', dial);
+els.btnEngage.addEventListener('click', engageManual);
+els.btnAbort.addEventListener('click', abort);
+els.audioBtn.addEventListener('click', () => {
+  state.audioOn = !state.audioOn;
+  els.audioBtn.classList.toggle('muted', !state.audioOn);
+  log('AUDIO', state.audioOn ? 'enabled' : 'muted', state.audioOn ? 'ok' : 'warn');
+  if (state.audioOn) click(660, 0.06, 0.4);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+  if (e.code === 'Space') { e.preventDefault(); dial(); }
+  else if (e.code === 'Enter') { e.preventDefault(); engageManual(); }
+  else if (e.key.toLowerCase() === 'r') { e.preventDefault(); abort(); }
+  else if (e.key.toLowerCase() === 'm') { e.preventDefault(); els.audioBtn.click(); }
+});
+
+/* ──────────────────────────────────────────────────────
+   UPTIME TICKER
+   ────────────────────────────────────────────────────── */
+setInterval(() => {
+  const s = Math.floor((Date.now() - state.startTime) / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2, '0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  els.upVal.textContent = `${h}:${m}:${ss}`;
+}, 1000);
+
+/* ──────────────────────────────────────────────────────
+   BOOT
+   ────────────────────────────────────────────────────── */
+els.ledState.classList.add('red');
+els.ledSeq.classList.add('cyan');
+els.ledHash.classList.add('cyan');
+els.ledLog.classList.add('cyan');
+log('BOOT', 'VALENCE MATRIX rev 2.1.0 online', 'ok');
+log('CFG',  '24 vestibules · 7 chevrons · 3 tracks · 30₈');
+log('CFG',  'BREACH PROTOCOL armed · 7 phases');
+log('HINT', 'click vestibules or press SPACE to auto-dial');
+restore();
+refresh();
+
+console.log('%c VALENCE MATRIX rev 2.1.0 ', 'background:#62d6ff;color:#06080c;font-family:Manrope;font-weight:800;padding:4px 10px;');
+console.log('%c 24 = 30₈ = 3 × 10₈ = 3 × ⊥ = TRIPOD ', 'color:#62d6ff;font-family:monospace;');
+</script>
+
+</body>
+</html>
