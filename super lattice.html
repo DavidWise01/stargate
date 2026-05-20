@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SUPER LATTICE // 8⁴+1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    :root {
+        --cyan: #00ffff;
+        --pink: #ff00aa;
+        --green: #00ffaa;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+    body {
+        background: radial-gradient(ellipse at center, #0a001f, #000000);
+        font-family: 'Courier New', monospace;
+        color: var(--cyan);
+        overflow: hidden;
+        height: 100vh;
+    }
+    #root {
+        width: 100%; height: 100%;
+        display: grid;
+        grid-template-rows: 70px 1fr 220px;
+        grid-template-columns: 300px 1fr 320px;
+        grid-template-areas:
+            "header header header"
+            "controls viewport console"
+            "slicer viewport console";
+        gap: 14px;
+        padding: 14px;
+    }
+    .glass {
+        background: rgba(10, 15, 40, 0.35);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(0, 255, 255, 0.4);
+        border-radius: 16px;
+        box-shadow: 0 0 50px rgba(0, 255, 255, 0.25),
+                    inset 0 0 40px rgba(0, 255, 255, 0.08);
+        position: relative;
+        overflow: hidden;
+    }
+    .glass::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(0,255,255,0.08), transparent);
+        animation: shimmer 8s linear infinite;
+        pointer-events: none;
+    }
+    @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+
+    #header {
+        grid-area: header;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 28px;
+        font-size: 15px;
+        letter-spacing: 3px;
+        font-weight: bold;
+    }
+    #title {
+        font-size: 22px;
+        text-shadow: 0 0 30px var(--cyan);
+        letter-spacing: 4px;
+    }
+    #stats { display: flex; gap: 24px; font-size: 13px; }
+    .stat-value { color: var(--green); text-shadow: 0 0 12px var(--green); }
+
+    button {
+        background: rgba(0, 255, 255, 0.08);
+        border: 1px solid rgba(0, 255, 255, 0.5);
+        color: var(--cyan);
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    button:hover { background: rgba(0, 255, 255, 0.25); box-shadow: 0 0 25px rgba(0,255,255,0.6); }
+    button.active { background: rgba(0, 255, 170, 0.4); border-color: var(--green); box-shadow: 0 0 30px var(--green); }
+
+    #viewport {
+        grid-area: viewport;
+        position: relative;
+        perspective: 2500px;
+    }
+    #scene-3d {
+        width: 100%; height: 100%;
+        transform-style: preserve-3d;
+        transition: transform 0.08s linear;
+    }
+    .tesseract { 
+        position: absolute; 
+        top: 50%; left: 50%;
+        width: 340px; height: 340px;
+        margin: -170px 0 0 -170px;
+        transform-style: preserve-3d;
+    }
+
+    .pos-node {
+        position: absolute;
+        width: 18px; height: 18px;
+        background: radial-gradient(circle, #ff00ff, #00ffff);
+        border-radius: 50%;
+        box-shadow: 0 0 40px #ff00ff,
+                    0 0 80px #00ffff,
+                    inset 0 0 15px white;
+        z-index: 100;
+        animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+        0%,100% { transform: scale(1); }
+        50% { transform: scale(1.4); }
+    }
+
+    #trail-canvas {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .grid-cell {
+        background: rgba(0, 255, 255, 0.06);
+        border: 1px solid rgba(0, 255, 255, 0.25);
+        border-radius: 4px;
+        transition: all 0.15s;
+    }
+    .grid-cell.active {
+        background: rgba(0, 255, 170, 0.6);
+        border-color: var(--green);
+        box-shadow: 0 0 20px var(--green);
+    }
+    .grid-cell.root {
+        background: radial-gradient(circle, #ff00ff, #00ffff);
+        box-shadow: 0 0 30px #ff00ff;
+    }
+</style>
+</head>
+<body>
+<div id="root">
+    <div id="header" class="glass">
+        <div id="title">SUPER LATTICE // 8⁴+1</div>
+        <div id="stats">
+            <div><span class="stat-label">[W X Y Z]</span> <span id="stat-pos" class="stat-value">0 0 0 0</span></div>
+            <div><span class="stat-label">LINEAR</span> <span id="stat-linear" class="stat-value">0</span></div>
+            <div><span class="stat-label">POCKET</span> <span id="stat-pocket" class="stat-value">0</span></div>
+            <div><span class="stat-label">STEPS</span> <span id="stat-steps" class="stat-value">0</span></div>
+            <div><span class="stat-label">FLIPS</span> <span id="stat-flips" class="stat-value">0</span></div>
+        </div>
+    </div>
+
+    <div id="controls" class="glass" style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+        <div>
+            <div style="margin-bottom:8px; opacity:0.7; font-size:11px;">4D NAVIGATION</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button data-move="w-">W-</button><button data-move="w+">W+</button>
+                <button data-move="x-">X-</button><button data-move="x+">X+</button>
+                <button data-move="y-">Y-</button><button data-move="y+">Y+</button>
+                <button data-move="z-">Z-</button><button data-move="z+">Z+</button>
+            </div>
+        </div>
+        <div>
+            <div style="margin-bottom:8px; opacity:0.7; font-size:11px;">SYSTEM</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button id="btn-ascend">ASCEND</button>
+                <button id="btn-descend">DESCEND</button>
+                <button id="btn-auto">AUTO</button>
+                <button id="btn-reset">RESET</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewport" class="glass">
+        <canvas id="trail-canvas"></canvas>
+        <div id="scene-3d">
+            <div class="tesseract" id="tesseract">
+                <div id="hypercube"></div>
+                <div class="pos-node" id="pos-node"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="console" class="glass" style="padding:16px; display:flex; flex-direction:column;">
+        <div style="margin-bottom:8px; opacity:0.7; font-size:11px;">CONSOLE</div>
+        <div id="console-output" style="flex:1; overflow-y:auto; font-size:10.5px; line-height:1.5; opacity:0.85;"></div>
+    </div>
+
+    <div id="slicer" class="glass" style="padding:18px; display:flex; flex-direction:column; gap:14px;">
+        <div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
+                <span>W SLICE</span><span id="w-val">0</span>
+            </div>
+            <input type="range" id="w-slider" min="0" max="8" value="0">
+        </div>
+        <div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
+                <span>Y SLICE</span><span id="y-val">0</span>
+            </div>
+            <input type="range" id="y-slider" min="0" max="8" value="0">
+        </div>
+        <div style="margin-top:8px;">
+            <div style="font-size:11px; opacity:0.7; margin-bottom:8px;">X,Z SLICE (W,Y = <span id="slice-coords">0,0</span>)</div>
+            <div id="xz-grid" style="display:grid; grid-template-columns:repeat(9,1fr); gap:4px; flex:1;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ================ SUPER LATTICE v2 ================
+const state = {
+    pos: { w: 0, x: 0, y: 0, z: 0 },
+    trail: [],
+    linear: 0,
+    pocket: 0,
+    steps: 0,
+    flips: 0,
+    rotation: { x: -25, y: 38, z: 0 },
+    autoMode: false,
+    fastMode: false,
+    sliceW: 0,
+    sliceY: 0
+};
+
+const elements = {
+    statPos: document.getElementById('stat-pos'),
+    statLinear: document.getElementById('stat-linear'),
+    statPocket: document.getElementById('stat-pocket'),
+    statSteps: document.getElementById('stat-steps'),
+    statFlips: document.getElementById('stat-flips'),
+    scene3d: document.getElementById('scene-3d'),
+    posNode: document.getElementById('pos-node'),
+    canvas: document.getElementById('trail-canvas'),
+    console: document.getElementById('console-output'),
+    wSlider: document.getElementById('w-slider'),
+    ySlider: document.getElementById('y-slider'),
+    wVal: document.getElementById('w-val'),
+    yVal: document.getElementById('y-val'),
+    sliceCoords: document.getElementById('slice-coords'),
+    xzGrid: document.getElementById('xz-grid')
+};
+
+// Audio
+let audioCtx, masterGain, oscillators = {};
+
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.18;
+    masterGain.connect(audioCtx.destination);
+
+    const freqs = { w: 110, x: 146.83, y: 196, z: 261.63, root: 329.63 };
+    Object.keys(freqs).forEach(k => {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = freqs[k];
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0;
+        osc.connect(gain).connect(masterGain);
+        osc.start();
+        oscillators[k] = {osc, gain};
+    });
+}
+
+function updateAudio() {
+    if (!audioCtx) return;
+    const p = state.pos;
+    const rootMode = p.w === 8 && p.x === 8 && p.y === 8 && p.z === 8;
+
+    Object.keys(oscillators).forEach(k => {
+        const g = oscillators[k].gain.gain;
+        if (rootMode && k === 'root') {
+            g.linearRampToValueAtTime(0.6, audioCtx.currentTime + 0.4);
+        } else if (k !== 'root') {
+            g.linearRampToValueAtTime(p[k]/12, audioCtx.currentTime + 0.1);
+        } else {
+            g.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+        }
+    });
+}
+
+// Logging
+function log(msg, type = 'info') {
+    const line = document.createElement('div');
+    line.style.marginBottom = '3px';
+    if (type === 'success') line.style.color = '#00ffaa';
+    if (type === 'error') line.style.color = '#ff0088';
+    const ts = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    line.textContent = `[${ts}] ${msg}`;
+    elements.console.appendChild(line);
+    elements.console.scrollTop = 1e9;
+    if (elements.console.children.length > 120) elements.console.removeChild(elements.console.firstChild);
+}
+
+// Klein Bottle Topology
+function wrapKlein(val, axis) {
+    if (val > 8) {
+        state.flips++;
+        const next = {w:'x', x:'y', y:'z', z:'w'}[axis];
+        if (next) state.pos[next] = (state.pos[next] + 1) % 9;
+        return 0;
+    }
+    if (val < 0) {
+        state.flips++;
+        const prev = {w:'z', x:'w', y:'x', z:'y'}[axis];
+        if (prev) state.pos[prev] = (state.pos[prev] - 1 + 9) % 9;
+        return 8;
+    }
+    return val;
+}
+
+function move(axis, dir) {
+    initAudio();
+    const delta = state.fastMode ? 2 : 1;
+    state.pos[axis] += dir * delta;
+    state.pos[axis] = wrapKlein(state.pos[axis], axis);
+    
+    state.steps++;
+    state.linear = state.pos.w*729 + state.pos.x*81 + state.pos.y*9 + state.pos.z;
+    state.pocket = Math.floor(state.linear / 729);
+    state.trail.push({...state.pos});
+    if (state.trail.length > 6000) state.trail.shift();
+
+    if (state.pos.w === 8 && state.pos.x === 8 && state.pos.y === 8 && state.pos.z === 8) {
+        log('ROOT0+1 ACCESSED — TRANSCENDENCE', 'success');
+    }
+    update();
+}
+
+function ascend() {
+    initAudio();
+    state.pos = {w:8,x:8,y:8,z:8};
+    state.trail.push({...state.pos});
+    log('ASCENDED TO ROOT0+1', 'success');
+    update();
+}
+
+function reset() {
+    Object.assign(state, {
+        pos: {w:0,x:0,y:0,z:0},
+        trail: [],
+        linear:0, pocket:0, steps:0, flips:0
+    });
+    log('SYSTEM REINITIALIZED', 'info');
+    update();
+}
+
+// 4D → 3D Projection (improved)
+function project(w, x, y, z) {
+    const scale = 42;
+    const offset = 170;
+    const perspective = 5.5;
+    const wf = perspective / (perspective + (w - 4) * 0.6);
+    
+    return {
+        x: (x - 4) * scale * wf + offset,
+        y: (y - 4) * scale * wf + offset,
+        z: (z - 4) * scale * wf - 40
+    };
+}
+
+function update() {
+    elements.statPos.textContent = `${state.pos.w} ${state.pos.x} ${state.pos.y} ${state.pos.z}`;
+    elements.statLinear.textContent = state.linear;
+    elements.statPocket.textContent = state.pocket;
+    elements.statSteps.textContent = state.steps;
+    elements.statFlips.textContent = state.flips;
+
+    const r = state.rotation;
+    elements.scene3d.style.transform = `rotateX(${r.x}deg) rotateY(${r.y}deg) rotateZ(${r.z}deg)`;
+
+    const proj = project(state.pos.w, state.pos.x, state.pos.y, state.pos.z);
+    elements.posNode.style.left = proj.x + 'px';
+    elements.posNode.style.top = proj.y + 'px';
+    elements.posNode.style.transform = `translateZ(${proj.z}px)`;
+
+    if (state.pos.w === 8 && state.pos.x === 8 && state.pos.y === 8 && state.pos.z === 8) {
+        elements.posNode.style.background = 'radial-gradient(circle, #ffff00, #ff00ff)';
+        elements.posNode.style.boxShadow = '0 0 60px #ffff00, 0 0 120px #ff00ff';
+    }
+
+    updateSlice();
+    drawTrail();
+    updateAudio();
+}
+
+// Slice Grid
+function updateSlice() {
+    elements.wVal.textContent = state.sliceW;
+    elements.yVal.textContent = state.sliceY;
+    elements.sliceCoords.textContent = `${state.sliceW},${state.sliceY}`;
+
+    elements.xzGrid.innerHTML = '';
+    for (let x = 0; x < 9; x++) {
+        for (let z = 0; z < 9; z++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            if (state.pos.w === state.sliceW && state.pos.y === state.sliceY &&
+                state.pos.x === x && state.pos.z === z) cell.classList.add('active');
+            if (x===8 && z===8 && state.sliceW===8 && state.sliceY===8) cell.classList.add('root');
+            elements.xzGrid.appendChild(cell);
+        }
+    }
+}
+
+// Trail with glow
+function drawTrail() {
+    const canvas = elements.canvas;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * devicePixelRatio;
+    canvas.height = rect.height * devicePixelRatio;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    if (state.trail.length < 2) return;
+
+    for (let i = 1; i < state.trail.length; i++) {
+        const p0 = project(state.trail[i-1].w, state.trail[i-1].x, state.trail[i-1].y, state.trail[i-1].z);
+        const p1 = project(state.trail[i].w, state.trail[i].x, state.trail[i].y, state.trail[i].z);
+        
+        const alpha = Math.pow(i / state.trail.length, 1.3);
+        ctx.strokeStyle = `rgba(0, 255, 170, ${alpha * 0.75})`;
+        ctx.lineWidth = 2.2;
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = '#00ffaa';
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+    }
+}
+
+// Build better hypercube wireframe
+function buildHypercube() {
+    const container = document.getElementById('hypercube');
+    container.innerHTML = '';
+    container.style.position = 'absolute';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.transformStyle = 'preserve-3d';
+    
+    // You can expand this further with more lines/planes if you want
+    const colors = ['rgba(0,255,255,0.4)', 'rgba(255,0,170,0.3)'];
+    for (let i = 0; i < 12; i++) {
+        const edge = document.createElement('div');
+        edge.style.position = 'absolute';
+        edge.style.height = '2px';
+        edge.style.background = colors[i%2];
+        edge.style.boxShadow = '0 0 12px currentColor';
+        edge.style.transform = `rotateY(${i*30}deg) translateZ(120px)`;
+        container.appendChild(edge);
+    }
+}
+
+function init() {
+    buildHypercube();
+    update();
+    log('SUPER LATTICE INITIALIZED — 4097 NODES', 'success');
+    log('DRAG MOUSE TO ROTATE • SHIFT + KEYS = FAST', 'info');
+
+    // Button bindings
+    document.querySelectorAll('[data-move]').forEach(b => {
+        b.addEventListener('click', () => {
+            const axis = b.dataset.move[0];
+            const dir = b.dataset.move[1] === '+' ? 1 : -1;
+            move(axis, dir);
+        });
+    });
+
+    document.getElementById('btn-ascend').onclick = ascend;
+    document.getElementById('btn-descend').onclick = () => { if(state.pos.w===8) reset(); };
+    document.getElementById('btn-auto').onclick = () => {
+        state.autoMode = !state.autoMode;
+        document.getElementById('btn-auto').classList.toggle('active', state.autoMode);
+        if (state.autoMode) {
+            log('AUTO EXPLORATION ENGAGED', 'success');
+            setInterval(() => {
+                if (!state.autoMode) return;
+                const axes = ['w','x','y','z'];
+                move(axes[Math.floor(Math.random()*4)], Math.random() > 0.5 ? 1 : -1);
+            }, 120);
+        }
+    };
+    document.getElementById('btn-reset').onclick = reset;
+
+    // Sliders
+    elements.wSlider.addEventListener('input', e => { state.sliceW = +e.target.value; updateSlice(); });
+    elements.ySlider.addEventListener('input', e => { state.sliceY = +e.target.value; updateSlice(); });
+
+    // Mouse rotation
+    let dragging = false, lastX, lastY;
+    const vp = document.getElementById('viewport');
+    vp.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        state.rotation.y += (e.clientX - lastX) * 0.6;
+        state.rotation.x -= (e.clientY - lastY) * 0.6;
+        lastX = e.clientX; lastY = e.clientY;
+        update();
+    });
+    window.addEventListener('mouseup', () => dragging = false);
+
+    // Keyboard
+    window.addEventListener('keydown', e => {
+        if (e.shiftKey) state.fastMode = true;
+        switch(e.key.toLowerCase()) {
+            case 'q': move('w',-1); break;
+            case 'e': move('w',1); break;
+            case 'a': move('x',-1); break;
+            case 'd': move('x',1); break;
+            case 'z': move('y',-1); break;
+            case 'c': move('y',1); break;
+            case 'r': move('z',-1); break;
+            case 'f': move('z',1); break;
+            case ' ': e.preventDefault(); document.getElementById('btn-auto').click(); break;
+            case 'enter': ascend(); break;
+            case 'escape': reset(); break;
+        }
+    });
+    window.addEventListener('keyup', () => state.fastMode = false);
+
+    window.addEventListener('resize', drawTrail);
+}
+
+init();
+</script>
+</body>
+</html>

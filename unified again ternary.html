@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STARGATE // 8x8 MATRIX // AUTO DIAL // VALENCE LOCKE</title>
+<style>
+    :root {
+        --bg: #020510;
+        --panel: #0a1025;
+        --panel-2: #0f1631;
+        --cyan: #00f0ff;
+        --cyan-dim: #00a8b3;
+        --gold: #ffcc00;
+        --gold-dim: #b38f00;
+        --red: #ff3b30;
+        --green: #30d158;
+        --text: #d9e6ff;
+        --text-dim: #7a8fb3;
+        --grid-gap: 6px;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    html, body {
+        height: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        background: var(--bg);
+        color: var(--text);
+        overflow-x: hidden;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: 
+            radial-gradient(circle at 20% 30%, #1a2a6c40 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, #b21f1f30 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, #0f202740 0%, transparent 60%);
+        z-index: 0;
+        animation: nebula 40s ease-in-out infinite alternate;
+    }
+
+    @keyframes nebula {
+        0% { opacity: 0.6; transform: scale(1) rotate(0deg); }
+        100% { opacity: 0.9; transform: scale(1.1) rotate(2deg); }
+    }
+
+    .container {
+        position: relative;
+        z-index: 1;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 320px 1fr 320px;
+        grid-template-rows: auto 1fr auto;
+        gap: 16px;
+        grid-template-areas: 
+            "header header header"
+            "left main right"
+            "footer footer footer";
+    }
+
+    @media (max-width: 1200px) {
+        .container {
+            grid-template-columns: 1fr;
+            grid-template-areas: 
+                "header"
+                "main"
+                "left"
+                "right"
+                "footer";
+        }
+    }
+
+    .header {
+        grid-area: header;
+        background: linear-gradient(135deg, var(--panel), var(--panel-2));
+        border: 1px solid #1e2d5a;
+        border-radius: 12px;
+        padding: 16px 24px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 240, 255, 0.1), inset 0 1px 0 #2a3f7a;
+    }
+
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .title {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: var(--cyan);
+        text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    .valence {
+        font-size: 14px;
+        color: var(--text-dim);
+    }
+
+    .valence-value {
+        color: var(--gold);
+        font-weight: 700;
+        text-shadow: 0 0 8px rgba(255, 204, 0, 0.6);
+    }
+
+    .controls-bar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 12px;
+    }
+
+    .btn {
+        background: linear-gradient(135deg, #1a2647, #0f1a3a);
+        border: 1px solid #2a3f7a;
+        color: var(--text);
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        text-transform: uppercase;
+    }
+
+    .btn:hover {
+        background: linear-gradient(135deg, #233360, #1a2647);
+        border-color: var(--cyan-dim);
+        box-shadow: 0 4px 16px rgba(0, 240, 255, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+    }
+
+    .btn.active {
+        background: linear-gradient(135deg, #003d42, #001f24);
+        border-color: var(--cyan);
+        color: var(--cyan);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2);
+    }
+
+    .btn.danger {
+        border-color: var(--red);
+        color: var(--red);
+    }
+
+    .btn.danger.active {
+        background: linear-gradient(135deg, #420c0c, #240606);
+        box-shadow: 0 0 20px rgba(255, 59, 48, 0.4);
+    }
+
+    .slider-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--panel-2);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #1e2d5a;
+    }
+
+    .slider-group label {
+        font-size: 11px;
+        color: var(--text-dim);
+        white-space: nowrap;
+    }
+
+    input[type="range"] {
+        width: 120px;
+        height: 4px;
+        background: #1a2647;
+        border-radius: 2px;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        background: var(--cyan);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+    }
+
+    select {
+        background: var(--panel-2);
+        border: 1px solid #1e2d5a;
+        color: var(--text);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .panel {
+        background: linear-gradient(135deg, var(--panel), var(--panel-2));
+        border: 1px solid #1e2d5a;
+        border-radius: 12px;
+        padding: 16px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 #2a3f7a;
+    }
+
+    .panel-title {
+        font-size: 12px;
+        color: var(--cyan-dim);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #1e2d5a;
+    }
+
+    .left-panel {
+        grid-area: left;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .main-panel {
+        grid-area: main;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .right-panel {
+        grid-area: right;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .gate-display {
+        position: relative;
+        height: 280px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle, #0a1025 0%, #020510 70%);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .gate-ring {
+        position: relative;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background: conic-gradient(
+            from 0deg,
+            var(--cyan) 0deg,
+            #006670 45deg,
+            var(--cyan) 90deg,
+            #006670 135deg,
+            var(--cyan) 180deg,
+            #006670 225deg,
+            var(--cyan) 270deg,
+            #006670 315deg,
+            var(--cyan) 360deg
+        );
+        box-shadow: 
+            0 0 40px rgba(0, 240, 255, 0.3),
+            inset 0 0 20px rgba(0, 0, 0, 0.8);
+        animation: rotate 60s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .gate-ring::before {
+        content: '';
+        position: absolute;
+        inset: 15px;
+        border-radius: 50%;
+        background: var(--bg);
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+    }
+
+    .event-horizon {
+        position: absolute;
+        inset: 35px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        animation: ripple 2s ease-in-out infinite;
+    }
+
+    .event-horizon.active {
+        opacity: 1;
+    }
+
+    @keyframes ripple {
+        0%, 100% { transform: scale(0.95); }
+        50% { transform: scale(1.05); }
+    }
+
+    .grid-8x8 {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: var(--grid-gap);
+        aspect-ratio: 1;
+    }
+
+    .grid-cell {
+        background: linear-gradient(135deg, #0f1a3a, #0a1025);
+        border: 1px solid #1e2d5a;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .grid-cell:hover {
+        border-color: var(--cyan-dim);
+        background: linear-gradient(135deg, #1a2647, #0f1a3a);
+    }
+
+    .grid-cell.visited {
+        background: linear-gradient(135deg, #1a1f2e, #0f1219);
+        border-color: #2a2f3f;
+        color: #4a4f5f;
+    }
+
+    .grid-cell.active {
+        background: linear-gradient(135deg, #003d42, #001f24);
+        border-color: var(--cyan);
+        color: var(--cyan);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.6), inset 0 0 10px rgba(0, 240, 255, 0.3);
+        animation: pulse 1s ease-in-out infinite;
+        z-index: 10;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .slots {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+    }
+
+    .slot-btn {
+        padding: 8px 4px;
+        font-size: 10px;
+        background: linear-gradient(135deg, #1a2647, #0f1a3a);
+        border: 1px solid #2a3f7a;
+        border-radius: 6px;
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .slot-btn.locked {
+        background: linear-gradient(135deg, #3d4200, #1f2400);
+        border-color: var(--gold);
+        color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+    }
+
+    .slot-btn.active {
+        background: linear-gradient(135deg, #003d42, #001f24);
+        border-color: var(--cyan);
+        color: var(--cyan);
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+
+    .rings {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+    }
+
+    .ring-btn {
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1a2647, #0f1a3a);
+        border: 2px solid #2a3f7a;
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .ring-btn:hover {
+        border-color: var(--cyan-dim);
+        transform: scale(1.05);
+    }
+
+    .ring-btn.active {
+        background: linear-gradient(135deg, #003d42, #001f24);
+        border-color: var(--cyan);
+        color: var(--cyan);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+    }
+
+    .quantum-dots {
+        display: flex;
+        justify-content: space-around;
+        gap: 8px;
+    }
+
+    .dot {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1a2647, #0f1a3a);
+        border: 2px solid #2a3f7a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--text-dim);
+        transition: all 0.2s ease;
+    }
+
+    .dot.active {
+        border-color: var(--cyan);
+        background: linear-gradient(135deg, #003d42, #001f24);
+        color: var(--cyan);
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    }
+
+    .dot.p0.active, .dot.p1.active, .dot.p2.active, .dot.p3.active {
+        animation: flicker 0.3s ease-in-out infinite alternate;
+    }
+
+    .dot.p4.active {
+        border-color: var(--gold);
+        background: linear-gradient(135deg, #3d4200, #1f2400);
+        color: var(--gold);
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.6);
+        animation: none;
+    }
+
+    @keyframes flicker {
+        0% { opacity: 1; box-shadow: 0 0 15px rgba(0, 240, 255, 0.5); }
+        100% { opacity: 0.6; box-shadow: 0 0 5px rgba(0, 240, 255, 0.2); }
+    }
+
+    .bodies {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+    }
+
+    .body-btn {
+        padding: 10px 4px;
+        font-size: 11px;
+        background: linear-gradient(135deg, #1a2647, #0f1a3a);
+        border: 1px solid #2a3f7a;
+        border-radius: 6px;
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .body-btn:hover {
+        border-color: var(--cyan-dim);
+        background: linear-gradient(135deg, #233360, #1a2647);
+    }
+
+    .body-btn.active {
+        background: linear-gradient(135deg, #3d4200, #1f2400);
+        border-color: var(--gold);
+        color: var(--gold);
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+    }
+
+    .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        font-size: 11px;
+    }
+
+    .stat-item {
+        background: var(--panel-2);
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #1e2d5a;
+    }
+
+    .stat-label {
+        color: var(--text-dim);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .stat-value {
+        color: var(--cyan);
+        font-weight: 700;
+        margin-top: 2px;
+    }
+
+    .console {
+        grid-area: footer;
+        background: linear-gradient(135deg, #060913, #0a1025);
+        border: 1px solid #1e2d5a;
+        border-radius: 12px;
+        padding: 16px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-size: 11px;
+        line-height: 1.6;
+    }
+
+    .console::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .console::-webkit-scrollbar-track {
+        background: var(--panel-2);
+        border-radius: 4px;
+    }
+
+    .console::-webkit-scrollbar-thumb {
+        background: var(--cyan-dim);
+        border-radius: 4px;
+    }
+
+    .log-entry {
+        padding: 2px 0;
+        color: var(--text-dim);
+    }
+
+    .log-entry.info { color: var(--cyan); }
+    .log-entry.success { color: var(--green); }
+    .log-entry.warning { color: var(--gold); }
+    .log-entry.error { color: var(--red); }
+
+    .log-time {
+        color: #4a5f8a;
+        margin-right: 8px;
+    }
+
+    .help-text {
+        font-size: 10px;
+        color: var(--text-dim);
+        line-height: 1.5;
+        margin-top: 8px;
+    }
+
+    kbd {
+        background: #1a2647;
+        border: 1px solid #2a3f7a;
+        border-radius: 3px;
+        padding: 2px 6px;
+        font-size: 10px;
+        color: var(--cyan);
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header class="header">
+        <div class="header-top">
+            <div class="title">STARGATE // 8x8 MATRIX // AUTO DIAL</div>
+            <div class="valence">VALENCE LOCKE: <span class="valence-value">V = 00+2+4+8 = 14</span> | Required: <span id="valenceRequired">15/15</span></div>
+        </div>
+        <div class="controls-bar">
+            <button class="btn" id="autoBtn">AUTO TRAVERSE</button>
+            <button class="btn" id="pauseBtn">PAUSE</button>
+            <button class="btn" id="stopBtn">STOP</button>
+            <button class="btn danger" id="irisBtn">IRIS: OFF</button>
+            <div class="slider-group">
+                <label>SPEED</label>
+                <input type="range" id="speedSlider" min="500" max="5000" value="2000" step="100">
+                <span id="speedValue" style="color:var(--cyan);font-size:11px;width:50px;">2000ms</span>
+            </div>
+            <select id="patternSelect">
+                <option value="LINEAR">LINEAR</option>
+                <option value="SPIRAL">SPIRAL</option>
+                <option value="QUADRANT">QUADRANT</option>
+                <option value="RANDOM">RANDOM</option>
+                <option value="GROUND_ONLY">GROUND_ONLY</option>
+            </select>
+        </div>
+    </header>
+
+    <aside class="left-panel">
+        <div class="panel">
+            <div class="panel-title">8 ACROSS SLOTS</div>
+            <div class="slots" id="slots"></div>
+            <div class="help-text">S1 locked to ROOT0 Δ. Tab to cycle.</div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-title">8 DEPTH RINGS</div>
+            <div class="rings" id="rings"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">QUANTUM DOT</div>
+            <div class="quantum-dots" id="quantumDots"></div>
+            <div class="help-text">Formula: (depth*8+across)%5</div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">STATS</div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Addresses</div>
+                    <div class="stat-value" id="addrCount">0/64</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Current</div>
+                    <div class="stat-value" id="currentPos">-,-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Pocket</div>
+                    <div class="stat-value" id="pocketNum">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value" id="runTime">0s</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-panel">
+        <div class="panel">
+            <div class="panel-title">GATE INTERFACE</div>
+            <div class="gate-display">
+                <div class="gate-ring">
+                    <div class="event-horizon" id="eventHorizon"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="flex:1;">
+            <div class="panel-title">8×8 GRID MATRIX</div>
+            <div class="grid-8x8" id="grid"></div>
+        </div>
+    </main>
+
+    <aside class="right-panel">
+        <div class="panel">
+            <div class="panel-title">DODEKA BODIES [00-11]</div>
+            <div class="bodies" id="bodies"></div>
+            <div class="help-text">Keys: 0-9 for 00-09, - for 10, = for 11</div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">CONTROLS</div>
+            <div class="help-text">
+                <kbd>Space</kbd> Pause<br>
+                <kbd>Enter</kbd> Resume<br>
+                <kbd>ESC</kbd> Stop<br>
+                <kbd>Tab</kbd> Next Slot<br>
+                <kbd>1-8</kbd> Depth Ring
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">SYSTEM STATUS</div>
+            <div id="systemStatus" style="font-size:11px;color:var(--green);">STANDBY</div>
+        </div>
+    </aside>
+
+    <div class="console panel" id="console">
+        <div class="panel-title">EVENT CONSOLE</div>
+        <div id="consoleLog"></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+    
+    const GRID_SIZE = 8;
+    const TOTAL_ADDRESSES = 64;
+    const GREEK = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ'];
+    
+    let state = {
+        auto: false,
+        paused: false,
+        iris: false,
+        speed: 2000,
+        pattern: 'LINEAR',
+        currentIndex: 0,
+        currentRow: 0,
+        currentCol: 0,
+        currentDepth: 1,
+        currentSlot: 0,
+        currentBody: 0,
+        visited: new Set(),
+        startTime: null,
+        valenceCount: 15,
+        traversalPath: [],
+        pathIndex: 0
+    };
+
+    let audioCtx = null;
+    let loopTimer = null;
+
+    const els = {
+        autoBtn: document.getElementById('autoBtn'),
+        pauseBtn: document.getElementById('pauseBtn'),
+        stopBtn: document.getElementById('stopBtn'),
+        irisBtn: document.getElementById('irisBtn'),
+        speedSlider: document.getElementById('speedSlider'),
+        speedValue: document.getElementById('speedValue'),
+        patternSelect: document.getElementById('patternSelect'),
+        grid: document.getElementById('grid'),
+        slots: document.getElementById('slots'),
+        rings: document.getElementById('rings'),
+        bodies: document.getElementById('bodies'),
+        quantumDots: document.getElementById('quantumDots'),
+        eventHorizon: document.getElementById('eventHorizon'),
+        addrCount: document.getElementById('addrCount'),
+        currentPos: document.getElementById('currentPos'),
+        pocketNum: document.getElementById('pocketNum'),
+        runTime: document.getElementById('runTime'),
+        systemStatus: document.getElementById('systemStatus'),
+        consoleLog: document.getElementById('consoleLog'),
+        valenceRequired: document.getElementById('valenceRequired')
+    };
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function playTone(freq, duration, type = 'sine', vol = 0.1) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function playKawoosh() {
+        if (!audioCtx) return;
+        const bufferSize = audioCtx.sampleRate * 0.5;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.5);
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start();
+    }
+
+    function log(msg, type = 'info') {
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.innerHTML = `<span class="log-time">[${time}]</span>${msg}`;
+        els.consoleLog.appendChild(entry);
+        els.consoleLog.scrollTop = els.consoleLog.scrollHeight;
+    }
+
+    function buildGrid() {
+        els.grid.innerHTML = '';
+        for (let i = 0; i < TOTAL_ADDRESSES; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.dataset.index = i;
+            const row = Math.floor(i / GRID_SIZE);
+            const col = i % GRID_SIZE;
+            cell.textContent = `${row},${col}`;
+            cell.addEventListener('click', () => selectCell(row, col));
+            els.grid.appendChild(cell);
+        }
+    }
+
+    function buildSlots() {
+        els.slots.innerHTML = '';
+        for (let i = 1; i <= 8; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'slot-btn';
+            btn.dataset.slot = i;
+            btn.textContent = `S${i}`;
+            if (i === 1) {
+                btn.classList.add('locked');
+                btn.textContent = 'S1:ROOT0';
+            }
+            btn.addEventListener('click', () => selectSlot(i - 1));
+            els.slots.appendChild(btn);
+        }
+    }
+
+    function buildRings() {
+        els.rings.innerHTML = '';
+        for (let i = 1; i <= 8; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'ring-btn';
+            btn.dataset.depth = i;
+            btn.textContent = i;
+            btn.addEventListener('click', () => selectDepth(i));
+            els.rings.appendChild(btn);
+        }
+    }
+
+    function buildBodies() {
+        els.bodies.innerHTML = '';
+        for (let i = 0; i < 12; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'body-btn';
+            btn.dataset.body = i;
+            btn.textContent = `${i.toString().padStart(2, '0')} ${GREEK[i]}`;
+            btn.addEventListener('click', () => selectBody(i));
+            els.bodies.appendChild(btn);
+        }
+    }
+
+    function buildQuantumDots() {
+        els.quantumDots.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+            const dot = document.createElement('div');
+            dot.className = `dot p${i}`;
+            dot.dataset.pocket = i;
+            dot.textContent = `P${i}`;
+            els.quantumDots.appendChild(dot);
+        }
+    }
+
+    function generatePath(pattern) {
+        const path = [];
+        switch (pattern) {
+            case 'LINEAR':
+                for (let i = 0; i < TOTAL_ADDRESSES; i++) path.push(i);
+                break;
+            case 'SPIRAL':
+                let top = 0, bottom = GRID_SIZE - 1, left = 0, right = GRID_SIZE - 1;
+                while (top <= bottom && left <= right) {
+                    for (let i = left; i <= right; i++) path.push(top * GRID_SIZE + i);
+                    top++;
+                    for (let i = top; i <= bottom; i++) path.push(i * GRID_SIZE + right);
+                    right--;
+                    if (top <= bottom) {
+                        for (let i = right; i >= left; i--) path.push(bottom * GRID_SIZE + i);
+                        bottom--;
+                    }
+                    if (left <= right) {
+                        for (let i = bottom; i >= top; i--) path.push(i * GRID_SIZE + left);
+                        left++;
+                    }
+                }
+                break;
+            case 'QUADRANT':
+                const q1 = [], q2 = [], q3 = [], q4 = [];
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        const idx = r * GRID_SIZE + c;
+                        if (r < 4 && c < 4) q1.push(idx);
+                        else if (r < 4 && c >= 4) q2.push(idx);
+                        else if (r >= 4 && c < 4) q3.push(idx);
+                        else q4.push(idx);
+                    }
+                }
+                path.push(...q1, ...q2, ...q3, ...q4);
+                break;
+            case 'RANDOM':
+                for (let i = 0; i < TOTAL_ADDRESSES; i++) path.push(i);
+                for (let i = path.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [path[i], path[j]] = [path[j], path[i]];
+                }
+                break;
+            case 'GROUND_ONLY':
+                for (let c = 0; c < GRID_SIZE; c++) path.push((GRID_SIZE - 1) * GRID_SIZE + c);
+                break;
+        }
+        return path;
+    }
+
+    function selectCell(row, col) {
+        state.currentRow = row;
+        state.currentCol = col;
+        state.currentIndex = row * GRID_SIZE + col;
+        updateUI();
+        log(`Dialing address: ${row},${col} | Depth: ${state.currentDepth} | Body: ${GREEK[state.currentBody]}`, 'info');
+        dialSequence();
+    }
+
+    function selectSlot(slot) {
+        state.currentSlot = slot;
+        updateUI();
+    }
+
+    function selectDepth(depth) {
+        state.currentDepth = depth;
+        updateUI();
+        log(`Depth ring set to: ${depth}`, 'info');
+    }
+
+    function selectBody(body) {
+        state.currentBody = body;
+        updateUI();
+        log(`Dodeka body selected: ${body.toString().padStart(2, '0')} ${GREEK[body]}`, 'info');
+    }
+
+    function calculatePocket(depth, across) {
+        return (depth * 8 + across) % 5;
+    }
+
+    function updateQuantumDot() {
+        const pocket = calculatePocket(state.currentDepth, state.currentCol);
+        state.pocketNum = pocket;
+        document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+        const activeDot = document.querySelector(`.dot.p${pocket}`);
+        if (activeDot) activeDot.classList.add('active');
+        els.pocketNum.textContent = `P${pocket}`;
+    }
+
+    function dialSequence() {
+        if (state.iris) {
+            log('WORMHOLE BLOCKED: Iris is engaged', 'error');
+            playTone(150, 0.5, 'sawtooth', 0.2);
+            els.systemStatus.textContent = 'WORMHOLE BLOCKED';
+            els.systemStatus.style.color = 'var(--red)';
+            return;
+        }
+
+        updateQuantumDot();
+        els.eventHorizon.classList.add('active');
+        playKawoosh();
+        
+        setTimeout(() => {
+            playTone(440 + state.currentDepth * 50, 0.3, 'sine', 0.15);
+            log(`Pocket ${state.pocketNum} engaged | Kawoosh initiated`, 'success');
+            state.visited.add(state.currentIndex);
+            updateGrid();
+        }, 200);
+    }
+
+    function updateGrid() {
+        const cells = els.grid.querySelectorAll('.grid-cell');
+        cells.forEach(cell => {
+            const idx = parseInt(cell.dataset.index);
+            cell.classList.remove('active', 'visited');
+            if (idx === state.currentIndex) cell.classList.add('active');
+            else if (state.visited.has(idx)) cell.classList.add('visited');
+        });
+    }
+
+    function updateUI() {
+        updateGrid();
+        els.addrCount.textContent = `${state.visited.size}/64`;
+        els.currentPos.textContent = `${state.currentRow},${state.currentCol}`;
+        updateQuantumDot();
+
+        document.querySelectorAll('.slot-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', i === state.currentSlot);
+        });
+
+        document.querySelectorAll('.ring-btn').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.depth) === state.currentDepth);
+        });
+
+        document.querySelectorAll('.body-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', i === state.currentBody);
+        });
+
+        if (state.startTime) {
+            const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+            els.runTime.textContent = `${elapsed}s`;
+        }
+    }
+
+    function startAuto() {
+        initAudio();
+        state.auto = true;
+        state.paused = false;
+        state.startTime = Date.now();
+        state.traversalPath = generatePath(state.pattern);
+        state.pathIndex = 0;
+        state.visited.clear();
+        log(`AUTO TRAVERSE initiated: Pattern ${state.pattern}`, 'success');
+        els.autoBtn.classList.add('active');
+        els.systemStatus.textContent = 'AUTO TRAVERSING';
+        els.systemStatus.style.color = 'var(--cyan)';
+        autoLoop();
+    }
+
+    function autoLoop() {
+        if (!state.auto || state.paused) return;
+        if (state.iris) {
+            log('WORMHOLE BLOCKED: Auto traversal paused', 'error');
+            pauseAuto();
+            return;
+        }
+
+        if (state.pathIndex >= state.traversalPath.length) {
+            stopAuto();
+            log('TRAVERSAL COMPLETE: All 64 addresses visited', 'success');
+            els.systemStatus.textContent = 'TRAVERSE COMPLETE';
+            els.systemStatus.style.color = 'var(--green)';
+            playTone(880, 1, 'sine', 0.2);
+            return;
+        }
+
+        const idx = state.traversalPath[state.pathIndex];
+        state.currentIndex = idx;
+        state.currentRow = Math.floor(idx / GRID_SIZE);
+        state.currentCol = idx % GRID_SIZE;
+        state.currentDepth = (state.pathIndex % 8) + 1;
+        state.currentSlot = (state.pathIndex % 7) + 1;
+
+        log(`Traversing ${state.pathIndex + 1}/64: ${state.currentRow},${state.currentCol} | D${state.currentDepth}`, 'info');
+        selectCell(state.currentRow, state.currentCol);
+
+        state.pathIndex++;
+        updateUI();
+
+        loopTimer = setTimeout(autoLoop, state.speed);
+    }
+
+    function pauseAuto() {
+        state.paused = !state.paused;
+        if (state.paused) {
+            clearTimeout(loopTimer);
+            els.pauseBtn.textContent = 'RESUME';
+            els.pauseBtn.classList.add('active');
+            log('Auto traversal paused', 'warning');
+            els.systemStatus.textContent = 'PAUSED';
+            els.systemStatus.style.color = 'var(--gold)';
+        } else {
+            els.pauseBtn.textContent = 'PAUSE';
+            els.pauseBtn.classList.remove('active');
+            log('Auto traversal resumed', 'info');
+            els.systemStatus.textContent = 'AUTO TRAVERSING';
+            els.systemStatus.style.color = 'var(--cyan)';
+            autoLoop();
+        }
+    }
+
+    function stopAuto() {
+        state.auto = false;
+        state.paused = false;
+        clearTimeout(loopTimer);
+        els.autoBtn.classList.remove('active');
+        els.pauseBtn.classList.remove('active');
+        els.pauseBtn.textContent = 'PAUSE';
+        els.eventHorizon.classList.remove('active');
+        log('Auto traversal stopped', 'warning');
+        els.systemStatus.textContent = 'STANDBY';
+        els.systemStatus.style.color = 'var(--green)';
+    }
+
+    function toggleIris() {
+        state.iris = !state.iris;
+        els.irisBtn.textContent = `IRIS: ${state.iris ? 'ON' : 'OFF'}`;
+        els.irisBtn.classList.toggle('active', state.iris);
+        log(`Iris ${state.iris ? 'engaged' : 'disengaged'}`, state.iris ? 'error' : 'success');
+        if (state.iris && state.auto && !state.paused) pauseAuto();
+    }
+
+    function handleKeyPress(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        
+        switch(e.key) {
+            case ' ':
+                e.preventDefault();
+                if (state.auto) pauseAuto();
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (state.auto && state.paused) pauseAuto();
+                else if (!state.auto) startAuto();
+                break;
+            case 'Escape':
+                e.preventDefault();
+                stopAuto();
+                break;
+            case 'Tab':
+                e.preventDefault();
+                selectSlot((state.currentSlot + 1) % 7);
+                break;
+            case '0': e.preventDefault(); selectBody(0); break;
+            case '1': e.preventDefault(); if (e.shiftKey) selectDepth(1); else selectBody(1); break;
+            case '2': e.preventDefault(); if (e.shiftKey) selectDepth(2); else selectBody(2); break;
+            case '3': e.preventDefault(); if (e.shiftKey) selectDepth(3); else selectBody(3); break;
+            case '4': e.preventDefault(); if (e.shiftKey) selectDepth(4); else selectBody(4); break;
+            case '5': e.preventDefault(); if (e.shiftKey) selectDepth(5); else selectBody(5); break;
+            case '6': e.preventDefault(); if (e.shiftKey) selectDepth(6); else selectBody(6); break;
+            case '7': e.preventDefault(); if (e.shiftKey) selectDepth(7); else selectBody(7); break;
+            case '8': e.preventDefault(); if (e.shiftKey) selectDepth(8); else selectBody(8); break;
+            case '9': e.preventDefault(); selectBody(9); break;
+            case '-': e.preventDefault(); selectBody(10); break;
+            case '=': e.preventDefault(); selectBody(11); break;
+        }
+    }
+
+    els.autoBtn.addEventListener('click', () => {
+        if (state.auto) stopAuto();
+        else startAuto();
+    });
+    els.pauseBtn.addEventListener('click', () => { if (state.auto) pauseAuto(); });
+    els.stopBtn.addEventListener('click', stopAuto);
+    els.irisBtn.addEventListener('click', toggleIris);
+    
+    els.speedSlider.addEventListener('input', (e) => {
+        state.speed = parseInt(e.target.value);
+        els.speedValue.textContent = `${state.speed}ms`;
+    });
+    
+    els.patternSelect.addEventListener('change', (e) => {
+        state.pattern = e.target.value;
+        log(`Pattern changed to: ${state.pattern}`, 'info');
+    });
+
+    document.addEventListener('keydown', handleKeyPress);
+
+    function init() {
+        buildGrid();
+        buildSlots();
+        buildRings();
+        buildBodies();
+        buildQuantumDots();
+        updateUI();
+        log('STARGATE MATRIX initialized', 'success');
+        log('V = 00+2+4+8 = 14 | Required valence: 15/15 confirmed', 'info');
+        log('System ready. Press AUTO TRAVERSE or Enter to begin', 'info');
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>
